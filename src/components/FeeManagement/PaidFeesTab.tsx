@@ -1,9 +1,17 @@
 // components/FeeManagement/PaidFeesTab.tsx
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Animated,
+  ActivityIndicator,
+} from 'react-native';
 import dayjs from 'dayjs';
 import { Colors, Spacing, FontSizes } from '../../theme/theme';
 import PaidStudentCard from './PaidStudentCard';
+import { getRecentPayments } from '../../apis/api'; // ✅ API import
 
 interface PaidStudent {
   name: string;
@@ -12,28 +20,39 @@ interface PaidStudent {
   amount: number;
 }
 
-interface PaidFeesTabProps {
-  students: PaidStudent[];
-}
+const PaidFeesTab: React.FC = () => {
+  const [students, setStudents] = useState<PaidStudent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const PaidFeesTab: React.FC<PaidFeesTabProps> = ({ students }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    fetchRecentPayments();
   }, []);
+
+  const fetchRecentPayments = async () => {
+    try {
+      const data = await getRecentPayments();
+      setStudents(data);
+    } catch (error) {
+      console.error('Error fetching recent payments:', error);
+    } finally {
+      setLoading(false);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
 
   const sortedStudents = [...students].sort((a, b) =>
     dayjs(b.paidDate).diff(dayjs(a.paidDate)),
@@ -43,6 +62,14 @@ const PaidFeesTab: React.FC<PaidFeesTabProps> = ({ students }) => {
     (sum, student) => sum + student.amount,
     0,
   );
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <Animated.View
@@ -96,6 +123,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.lg,
     marginTop: Spacing.md,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

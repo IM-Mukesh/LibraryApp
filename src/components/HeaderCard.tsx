@@ -6,18 +6,20 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 
 interface HeaderCardProps {
-  libraryName: string;
-  adminName: string;
-  adminEmail: string;
-  status: 'active' | 'blocked';
+  // libraryName: string;
+  // adminName: string;
+  // adminEmail: string;
+  // status: 'active' | 'blocked';
 }
 
-const HeaderCard: React.FC<HeaderCardProps> = ({
-  libraryName,
-  adminName,
-  adminEmail,
-  status,
-}) => {
+const HeaderCard: React.FC<HeaderCardProps> = (
+  {
+    // libraryName,
+    // adminName,
+    // adminEmail,
+    // status,
+  },
+) => {
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const libraryData = useSelector((state: RootState) => state?.auth?.library);
@@ -38,7 +40,14 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
   }, []);
 
   const getStatusColor = () => {
-    return status === 'active' ? Colors.success : Colors.error;
+    return libraryData?.status === 'active' ? Colors.success : Colors.error;
+  };
+
+  const getStatus = () => {
+    if (libraryData?.status === 'active') {
+      return 'Active';
+    }
+    return 'Blocked';
   };
 
   return (
@@ -57,9 +66,7 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
         <View
           style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}
         >
-          <Text style={styles.statusText}>
-            {libraryData?.status.charAt(0).toUpperCase() + status.slice(1)}
-          </Text>
+          <Text style={styles.statusText}>{getStatus()}</Text>
         </View>
       </View>
       <Text style={styles.adminName}>{libraryData?.adminName}</Text>

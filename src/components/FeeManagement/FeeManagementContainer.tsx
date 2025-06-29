@@ -45,48 +45,9 @@ const FeeManagementContainer: React.FC = () => {
     }).start();
   };
 
-  const renderDueFeesTab = () => (
-    // <View style={styles.tabContentContainer}>
-    //   <Text style={styles.tabTitle}>Due Fees ({dueStudents.length})</Text>
-    //   {dueStudents.map((student, index) => (
-    //     <View key={index} style={styles.studentCard}>
-    //       <View style={styles.studentInfo}>
-    //         <Text style={styles.studentName}>{student.name}</Text>
-    //         <Text style={styles.studentRoll}>Roll: {student.rollNumber}</Text>
-    //         <Text style={styles.dueDate}>Due: {student.dueDate}</Text>
-    //         {student.phone && (
-    //           <Text style={styles.phoneNumber}>Phone: {student.phone}</Text>
-    //         )}
-    //       </View>
-    //       <View style={styles.statusBadge}>
-    //         <Text style={styles.statusText}>PENDING</Text>
-    //       </View>
-    //     </View>
-    //   ))}
-    // </View>
+  const renderDueFeesTab = () => <DueFeesTab />;
 
-    <DueFeesTab students={dueStudents} />
-  );
-
-  const renderPaidFeesTab = () => (
-    // <View style={styles.tabContentContainer}>
-    //   <Text style={styles.tabTitle}>Paid Fees ({paidStudents.length})</Text>
-    //   {paidStudents.map((student, index) => (
-    //     <View key={index} style={styles.studentCard}>
-    //       <View style={styles.studentInfo}>
-    //         <Text style={styles.studentName}>{student.name}</Text>
-    //         <Text style={styles.studentRoll}>Roll: {student.rollNumber}</Text>
-    //         <Text style={styles.paidDate}>Paid: {student.paidDate}</Text>
-    //         <Text style={styles.amount}>Amount: ₹{student.amount}</Text>
-    //       </View>
-    //       <View style={[styles.statusBadge, styles.paidBadge]}>
-    //         <Text style={[styles.statusText, styles.paidText]}>PAID</Text>
-    //       </View>
-    //     </View>
-    //   ))}
-    // </View>
-    <PaidFeesTab students={paidStudents} />
-  );
+  const renderPaidFeesTab = () => <PaidFeesTab />;
 
   return (
     <View style={styles.container}>

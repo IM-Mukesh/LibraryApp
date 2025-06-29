@@ -1,4 +1,3 @@
-// components/FeeManagement/DueStudentCard.tsx
 import React, { useRef, useEffect } from 'react';
 import {
   View,
@@ -7,11 +6,11 @@ import {
   Animated,
   TouchableOpacity,
   Linking,
-  Alert,
   Platform,
 } from 'react-native';
 import dayjs from 'dayjs';
 import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 interface StudentWithStatus {
   name: string;
@@ -19,8 +18,8 @@ interface StudentWithStatus {
   dueDate: string;
   daysLeft: number;
   isOverdue: boolean;
-  phone?: string;
-  amount?: number; // Added for WhatsApp message
+  mobile?: string;
+  amount?: number;
 }
 
 interface DueStudentCardProps {
@@ -51,81 +50,53 @@ const DueStudentCard: React.FC<DueStudentCardProps> = ({ student, index }) => {
   }, [index]);
 
   const formatPhoneNumber = (phone: string): string => {
-    // Remove any non-digit characters and ensure it starts with country code
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.startsWith('91')) {
-      return cleanPhone;
-    }
-    return `91${cleanPhone}`;
+    const clean = phone.replace(/\D/g, '');
+    return clean.startsWith('91') ? clean : `91${clean}`;
   };
 
   const generateWhatsAppMessage = (): string => {
     const { name, amount = 0, daysLeft, isOverdue } = student;
     const dueAmount = amount.toLocaleString('en-IN');
-
-    if (isOverdue) {
-      return `Hi ${name},\n\nThis is a gentle reminder that your fee payment of ₹${dueAmount} was due ${Math.abs(
-        daysLeft,
-      )} day${
-        Math.abs(daysLeft) > 1 ? 's' : ''
-      } ago.\n\nPlease make the payment at your earliest convenience to avoid any inconvenience.\n\nThank you!`;
-    } else {
-      return `Hi ${name},\n\nThis is a friendly reminder that your fee payment of ₹${dueAmount} is due in ${daysLeft} day${
-        daysLeft > 1 ? 's' : ''
-      }.\n\nPlease ensure timely payment to avoid any late fees.\n\nThank you!`;
-    }
+    return isOverdue
+      ? `Hi ${name},\n\nThis is a gentle reminder that your fee payment of ₹${dueAmount} was due ${Math.abs(
+          daysLeft,
+        )} day${
+          Math.abs(daysLeft) > 1 ? 's' : ''
+        } ago.\n\nPlease make the payment soon.\n\nThank you!`
+      : `Hi ${name},\n\nThis is a reminder that your fee of ₹${dueAmount} is due in ${daysLeft} day${
+          daysLeft > 1 ? 's' : ''
+        }.\n\nKindly pay on time.\n\nThanks!`;
   };
 
   const handleWhatsAppPress = async () => {
-    if (!student.phone) return;
+    if (!student.mobile) return;
 
-    const phoneNumber = formatPhoneNumber(student.phone);
-    const message = generateWhatsAppMessage();
-    const encodedMessage = encodeURIComponent(message);
-
-    const whatsappUrl =
-      Platform.OS === 'ios'
-        ? `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`
-        : `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`;
+    const phone = formatPhoneNumber(student.mobile);
+    const msg = encodeURIComponent(generateWhatsAppMessage());
+    const url = `whatsapp://send?phone=${phone}&text=${msg}`;
+    const fallback = `https://wa.me/${phone}?text=${msg}`;
 
     try {
-      const supported = await Linking.canOpenURL(whatsappUrl);
-      if (supported) {
-        await Linking.openURL(whatsappUrl);
-      } else {
-        // Fallback to web WhatsApp
-        const webWhatsApp = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-        await Linking.openURL(webWhatsApp);
-      }
-    } catch (error) {
-      console.error('Error opening WhatsApp:', error);
+      const supported = await Linking.canOpenURL(url);
+      await Linking.openURL(supported ? url : fallback);
+    } catch (err) {
+      console.error('WhatsApp error:', err);
     }
   };
 
-  const getStatusColor = () => {
-    if (student.isOverdue) return Colors.error;
-    if (student.daysLeft <= 2) return Colors.warning;
-    return Colors.success;
-  };
+  const getStatusColor = () =>
+    student.isOverdue
+      ? Colors.error
+      : student.daysLeft <= 2
+      ? Colors.warning
+      : Colors.success;
 
-  const getStatusText = () => {
-    if (student.isOverdue) {
-      return `${Math.abs(student.daysLeft)} day${
-        Math.abs(student.daysLeft) > 1 ? 's' : ''
-      } overdue`;
-    }
-    return `${student.daysLeft} day${student.daysLeft > 1 ? 's' : ''} left`;
-  };
-
-  const getAlertMessage = () => {
-    if (student.isOverdue) {
-      return 'Payment Overdue';
-    }
-    if (student.daysLeft <= 2) {
-      return 'Due Soon';
-    }
-    return 'Upcoming Due';
-  };
+  const getStatusText = () =>
+    student.isOverdue
+      ? `${Math.abs(student.daysLeft)} day${
+          Math.abs(student.daysLeft) > 1 ? 's' : ''
+        } overdue`
+      : `${student.daysLeft} day${student.daysLeft > 1 ? 's' : ''} left`;
 
   return (
     <Animated.View
@@ -173,24 +144,13 @@ const DueStudentCard: React.FC<DueStudentCardProps> = ({ student, index }) => {
         </View>
 
         <View style={styles.bottomSection}>
-          {/* <View
-            style={[
-              styles.alertBadge,
-              { backgroundColor: `${getStatusColor()}15` },
-            ]}
-          >
-            <Text style={[styles.alertText, { color: getStatusColor() }]}>
-              {getAlertMessage()}
-            </Text>
-          </View> */}
-
-          {student.phone && (
+          {student?.mobile && (
             <TouchableOpacity
               style={styles.whatsappButton}
               onPress={handleWhatsAppPress}
               activeOpacity={0.7}
             >
-              <Text style={styles.whatsappIcon}>💬</Text>
+              <FontAwesome name="whatsapp" size={16} color="#fff" />
             </TouchableOpacity>
           )}
         </View>
@@ -201,7 +161,7 @@ const DueStudentCard: React.FC<DueStudentCardProps> = ({ student, index }) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.sm, // Reduced spacing between cards
+    marginBottom: Spacing.sm,
   },
   card: {
     backgroundColor: Colors.card,
@@ -210,10 +170,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: Colors.primary,
     shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
@@ -221,7 +178,6 @@ const styles = StyleSheet.create({
   mainContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
     marginBottom: Spacing.sm,
   },
   studentInfo: {
@@ -252,7 +208,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statusText: {
-    fontSize: 11, // Smaller text
+    fontSize: 11,
     fontWeight: '600',
     color: Colors.white,
   },
@@ -265,37 +221,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  alertBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  alertText: {
-    fontSize: 11, // Smaller alert text
-    fontWeight: '500',
-    textAlign: 'center',
+    minHeight: 24,
   },
   whatsappButton: {
     backgroundColor: '#25D366',
     borderRadius: Radius.lg,
     padding: Spacing.sm,
-    shadowColor: '#25D366',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
     position: 'absolute',
     right: 0,
     bottom: -8,
-  },
-  whatsappIcon: {
-    fontSize: 16,
+    elevation: 4,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
 

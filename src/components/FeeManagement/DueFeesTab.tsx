@@ -1,36 +1,47 @@
 // components/FeeManagement/DueFeesTab.tsx
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
+
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Animated,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import dayjs from 'dayjs';
 import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
 import DueStudentCard from './DueStudentCard';
+import { getDueFees } from '../../apis/api'; // <-- API to fetch due students
 
 interface Student {
   name: string;
   rollNumber: string;
-  dueDate: string;
-  phone?: string;
-  amount?: number; // Added amount for WhatsApp message
+  nextDueDate: string; // from API
+  mobile?: string;
+  shift?: string;
+  amount?: number;
 }
 
 interface StudentWithStatus extends Student {
+  dueDate: string; // 👈 added explicitly
   daysLeft: number;
   isOverdue: boolean;
 }
 
-interface DueFeesTabProps {
-  students: Student[];
-}
-
-const DueFeesTab: React.FC<DueFeesTabProps> = ({ students }) => {
+const DueFeesTab: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current; // Reduced slide distance
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 500, // Faster animation
+        duration: 500,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
@@ -41,36 +52,60 @@ const DueFeesTab: React.FC<DueFeesTabProps> = ({ students }) => {
     ]).start();
   }, []);
 
+  useEffect(() => {
+    const fetchDueStudents = async () => {
+      try {
+        const data = await getDueFees();
+
+        setStudents(data); // data should be array of students with nextDueDate
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to load due students');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDueStudents();
+  }, []);
+
   const processStudents = (): StudentWithStatus[] => {
     const today = dayjs();
 
     const studentsWithStatus: StudentWithStatus[] = students.map(student => {
-      const dueDate = dayjs(student.dueDate);
-      const daysLeft = dueDate.diff(today, 'day');
+      const dueDate = student.nextDueDate; // 👈 fix: alias here
+      const dueDay = dayjs(dueDate);
+      const daysLeft = dueDay.diff(today, 'day');
       const isOverdue = daysLeft < 0;
 
       return {
         ...student,
+        dueDate, // 👈 now DueStudentCard gets the expected field
         daysLeft,
         isOverdue,
       };
     });
 
-    // Filter: overdue or due within 7 days
-    const filteredStudents = studentsWithStatus.filter(
-      student => student.isOverdue || student.daysLeft <= 7,
+    const filtered = studentsWithStatus.filter(
+      s => s.isOverdue || s.daysLeft <= 7,
     );
 
-    // Sort: overdue first, then by days left
-    return filteredStudents.sort((a, b) => {
+    return filtered.sort((a, b) => {
       if (a.isOverdue && !b.isOverdue) return -1;
       if (!a.isOverdue && b.isOverdue) return 1;
-      if (a.isOverdue && b.isOverdue) return a.daysLeft - b.daysLeft;
       return a.daysLeft - b.daysLeft;
     });
   };
 
   const sortedStudents = processStudents();
+
+  if (loading) {
+    return (
+      <View style={styles.emptyState}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.emptySubtitle}>Loading due students...</Text>
+      </View>
+    );
+  }
 
   return (
     <Animated.View
@@ -105,7 +140,7 @@ const DueFeesTab: React.FC<DueFeesTabProps> = ({ students }) => {
         ) : (
           sortedStudents.map((student, index) => (
             <DueStudentCard
-              key={`${student.rollNumber}-${student.dueDate}`}
+              key={`${student.rollNumber}-${student.nextDueDate}`}
               student={student}
               index={index}
             />
@@ -116,17 +151,19 @@ const DueFeesTab: React.FC<DueFeesTabProps> = ({ students }) => {
   );
 };
 
+export default DueFeesTab;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: Spacing.md, // Reduced padding
-    marginTop: Spacing.sm, // Reduced top margin
+    paddingHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.md, // Reduced margin
+    marginBottom: Spacing.md,
     paddingVertical: Spacing.xs,
   },
   title: {
@@ -143,10 +180,7 @@ const styles = StyleSheet.create({
     minWidth: 32,
     alignItems: 'center',
     shadowColor: Colors.error,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
@@ -160,7 +194,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.lg, // Reduced padding
+    paddingBottom: Spacing.lg,
   },
   emptyState: {
     flex: 1,
@@ -169,7 +203,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
   },
   emptyIcon: {
-    fontSize: 48, // Smaller icon
+    fontSize: 48,
     marginBottom: Spacing.md,
   },
   emptyTitle: {
@@ -184,5 +218,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
-export default DueFeesTab;

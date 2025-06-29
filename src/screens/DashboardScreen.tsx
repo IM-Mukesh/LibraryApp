@@ -1,88 +1,74 @@
 // DashboardScreen.tsx
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
-  View,
   StyleSheet,
   SafeAreaView,
   StatusBar,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { Colors, Spacing } from '../theme/theme';
 import HeaderCard from '../components/HeaderCard';
 import SummaryCards from '../components/SummaryCards';
-// import DueFeeList from '../components/DueFeesList';
-import {
-  dueStudents,
-  paidStudents,
-} from '../components/FeeManagement/fakeData';
 import FeeManagementContainer from '../components/FeeManagement/FeeManagementContainer';
-import FeeManagementTabView from '../components/FeeManagement/FeeManagementTabView';
 
 const DashboardScreen: React.FC = () => {
-  const dashboardData = {
-    libraryName: 'MUKESH Library',
-    adminName: 'Mukesh Kumar',
-    adminEmail: 'mukesh@gmail.com',
-    status: 'active' as const,
-    totalStudents: 120,
-    thisMonthAmount: 4000,
-    lastMonthAmount: 3000,
-    students: [
-      {
-        name: 'Ravi Sharma',
-        rollNumber: 'A123',
-        dueDate: '2025-06-15',
-      },
-      {
-        name: 'Anita Singh',
-        rollNumber: 'B456',
-        dueDate: '2025-06-22',
-      },
-      {
-        name: 'Raj Patel',
-        rollNumber: 'C789',
-        dueDate: '2025-06-10',
-      },
-      {
-        name: 'Priya Gupta',
-        rollNumber: 'D101',
-        dueDate: '2025-06-08',
-      },
-      {
-        name: 'Amit Kumar',
-        rollNumber: 'E202',
-        dueDate: '2025-06-25',
-      },
-    ],
-  };
+  const [refreshing, setRefreshing] = useState(false);
+  const summaryCardsRef = useRef<any>(null);
+  const feeManagementRef = useRef<any>(null);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    try {
+      // Create an array of promises for all refresh operations
+      const refreshPromises = [];
+
+      // Add SummaryCards refresh if ref exists
+      if (summaryCardsRef.current?.refresh) {
+        refreshPromises.push(summaryCardsRef.current.refresh());
+      }
+
+      // Add FeeManagement refresh if ref exists
+      if (feeManagementRef.current?.refresh) {
+        refreshPromises.push(feeManagementRef.current.refresh());
+      }
+
+      // Wait for all refresh operations to complete
+      await Promise.allSettled(refreshPromises);
+    } catch (error) {
+      console.error('Dashboard refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      {/* Fixed Header Card */}
-      <HeaderCard
-        libraryName={dashboardData.libraryName}
-        adminName={dashboardData.adminName}
-        adminEmail={dashboardData.adminEmail}
-        status={dashboardData.status}
-      />
+      <HeaderCard />
 
-      {/* Scrollable Content */}
+      {/* Scrollable Content with Pull-to-Refresh */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+            title="Refreshing..."
+            titleColor={Colors.textSecondary}
+          />
+        }
       >
-        <SummaryCards />
+        <SummaryCards ref={summaryCardsRef} />
 
-        {/* <DueFeeList students={dashboardData.students} /> */}
+        {/* <FeeManagementContainer ref={feeManagementRef} />  */}
         <FeeManagementContainer />
-
-        {/* <FeeManagementTabView
-          dueStudents={dueStudents}
-          paidStudents={paidStudents}
-        /> */}
       </ScrollView>
     </SafeAreaView>
   );

@@ -204,7 +204,7 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
     const payload: CreatePaymentPayload = {
       libraryId: libId,
       studentId: studentData?._id,
-      amount: parseInt(monthlyAmount),
+      amount: totalAmount,
       discount: parseInt(discountAmount),
       paymentMethod: paymentMode,
       fromMonth: fromMonth.toISOString(),

@@ -227,13 +227,13 @@ export const StudentEnrollmentForm: React.FC<StudentEnrollmentFormProps> = ({
           },
         ]}
       >
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <Text style={styles.title}>Student Enrollment</Text>
           <Text style={styles.subtitle}>
             Fill details to enroll a new student
           </Text>
           {renderProgressBar()}
-        </View>
+        </View> */}
 
         <ScrollView
           style={styles.scrollView}

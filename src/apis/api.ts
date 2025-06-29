@@ -30,10 +30,16 @@ export interface LoginResponse {
   library: Library;
 }
 
+export interface CollectionSummary {
+  cash: number;
+  online: number;
+  total: number;
+}
+
 export interface DashboardStats {
   totalStudents: number;
-  currentMonthCollection: number;
-  lastMonthCollection: number;
+  currentMonthCollection: CollectionSummary;
+  lastMonthCollection: CollectionSummary;
 }
 
 export interface Student {
@@ -197,4 +203,56 @@ export const createPayment = async (
 ): Promise<PaymentResponse> => {
   const response = await api.post<PaymentResponse>('/api/payments', payload);
   return response.data;
+};
+
+export interface DueStudent {
+  name: string;
+  rollNumber: string;
+  mobile: string;
+  shift: string;
+  nextDueDate: string; // ISO string
+}
+
+export interface RecentPayment {
+  name: string;
+  rollNumber: string;
+  paidDate: string;
+  amount: number;
+  paymentMethod: 'cash' | 'online';
+}
+
+export const getDueFees = async (): Promise<DueStudent[]> => {
+  try {
+    const response = await api.get('/api/student/due');
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch due students');
+    }
+    return response.data.data as DueStudent[];
+  } catch (error: any) {
+    console.error('getDueFees error:', error.response?.data || error.message);
+    throw new Error(
+      error.response?.data?.message || 'Failed to fetch due students',
+    );
+  }
+};
+
+// ---------------- GET RECENT PAYMENTS ----------------
+export const getRecentPayments = async (): Promise<RecentPayment[]> => {
+  try {
+    const response = await api.get('/api/student/recentpaid');
+    if (!response.data.success) {
+      throw new Error(
+        response.data.message || 'Failed to fetch recent payments',
+      );
+    }
+    return response.data.data as RecentPayment[];
+  } catch (error: any) {
+    console.error(
+      'getRecentPayments error:',
+      error.response?.data || error.message,
+    );
+    throw new Error(
+      error.response?.data?.message || 'Failed to fetch recent payments',
+    );
+  }
 };
