@@ -1,4 +1,4 @@
-package com.libraryadminapp
+package com.gyaanshelf
 
 import android.app.Application
 import com.facebook.react.PackageList

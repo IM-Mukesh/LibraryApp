@@ -1,0 +1,200 @@
+// src/api/api.ts
+
+import axios from 'axios';
+import { BASE_URL } from './config';
+
+// ---------------- TYPES ----------------
+
+export interface Library {
+  _id: string;
+  name: string;
+  code: string;
+  adminName: string;
+  adminEmail: string;
+  adminPhone: string;
+  address: string;
+  status: string;
+  isPaymentRequired: boolean;
+  billingAmount: number;
+  lastPaidDate: string | null;
+  nextDueDate: string;
+  accessBlocked: boolean;
+  paymentNotes: string;
+  billingStartDate: string;
+  createdAt: string;
+  __v: number;
+}
+
+export interface LoginResponse {
+  token: string;
+  library: Library;
+}
+
+export interface DashboardStats {
+  totalStudents: number;
+  currentMonthCollection: number;
+  lastMonthCollection: number;
+}
+
+export interface Student {
+  _id: string;
+  name: string;
+  rollNumber?: string;
+  mobile: string;
+  aadhar: string;
+  email?: string;
+  fatherName?: string;
+  address?: string;
+  homePhoneNumber?: string;
+  shift: 'morning' | 'evening' | string;
+  libraryId: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+export type CreateStudentInput = Omit<
+  Student,
+  '_id' | '__v' | 'createdAt' | 'updatedAt' | 'rollNumber'
+>;
+
+// ---------------- AXIOS INSTANCE ----------------
+
+export const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// ---------------- AUTH TOKEN HANDLER ----------------
+
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
+
+// ---------------- AUTH & LIBRARY APIs ----------------
+
+export const loginLibrary = async (
+  adminEmail: string,
+  password: string,
+): Promise<LoginResponse> => {
+  try {
+    const response = await api.post('/api/libraries/login', {
+      adminEmail,
+      password,
+    });
+
+    const data = response.data;
+
+    if (!data.success) {
+      throw new Error(data.message || 'Login failed');
+    }
+
+    return data.data as LoginResponse;
+  } catch (error: any) {
+    console.error('Login Error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'Login failed');
+  }
+};
+
+export const getDashboardStats = async (): Promise<DashboardStats> => {
+  try {
+    const response = await api.post('/api/libraries/admin-dashboard');
+
+    const data = response.data;
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch dashboard stats');
+    }
+
+    return data.data as DashboardStats;
+  } catch (error: any) {
+    console.error('Dashboard Error:', error.response?.data || error.message);
+    throw new Error(
+      error.response?.data?.message || 'Failed to fetch dashboard stats',
+    );
+  }
+};
+
+// ---------------- STUDENT APIs ----------------
+
+export const getAllStudents = async (): Promise<Student[]> => {
+  try {
+    const response = await api.get('/api/student');
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch students');
+    }
+
+    return response.data.students;
+  } catch (error: any) {
+    console.error('Get Students Error:', error.response?.data || error.message);
+    throw new Error(
+      error.response?.data?.message || 'Failed to fetch students',
+    );
+  }
+};
+
+export const createStudent = async (
+  studentData: CreateStudentInput,
+): Promise<Student> => {
+  try {
+    const response = await api.post('/api/student', studentData);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to create student');
+    }
+
+    return response.data.student;
+  } catch (error: any) {
+    console.error(
+      'Create Student Error:',
+      error.response?.data || error.message,
+    );
+    throw new Error(
+      error.response?.data?.message || 'Failed to create student',
+    );
+  }
+};
+
+// types/api.ts
+export interface CreatePaymentPayload {
+  libraryId: string;
+  studentId: string;
+  amount: number;
+  discount?: number;
+  paymentMethod?: 'cash' | 'online';
+  fromMonth: string; // ISO date string (e.g., "2025-06-01")
+  toMonth: string; // ISO date string
+  nextDueDate: string; // ISO date string
+  notes?: string;
+}
+
+export interface PaymentResponse {
+  _id: string;
+  libraryId: string;
+  studentId: string;
+  amount: number;
+  discount: number;
+  paymentMethod: 'cash' | 'online';
+  fromMonth: string;
+  toMonth: string;
+  nextDueDate: string;
+  paidDate: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  __v?: number;
+}
+
+export const createPayment = async (
+  payload: CreatePaymentPayload,
+): Promise<PaymentResponse> => {
+  const response = await api.post<PaymentResponse>('/api/payments', payload);
+  return response.data;
+};
