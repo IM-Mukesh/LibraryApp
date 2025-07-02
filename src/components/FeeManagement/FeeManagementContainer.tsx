@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,54 +8,65 @@ import {
   Dimensions,
 } from 'react-native';
 import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
-import {
-  dueStudents,
-  paidStudents,
-} from '../../components/FeeManagement/fakeData';
 import DueFeesTab from './DueFeesTab';
 import PaidFeesTab from './PaidFeesTab';
-
-interface Student {
-  name: string;
-  rollNumber: string;
-  dueDate: string;
-  phone?: string;
-}
-
-interface PaidStudent {
-  name: string;
-  rollNumber: string;
-  paidDate: string;
-  amount: number;
-}
 
 const { width } = Dimensions.get('window');
 
 const FeeManagementContainer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'due' | 'paid'>('due');
-  const [slideAnim] = useState(new Animated.Value(0));
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
 
   const handleTabChange = (tab: 'due' | 'paid') => {
+    if (activeTab === tab) return; // Prevent unnecessary animations
+
     setActiveTab(tab);
-    Animated.spring(slideAnim, {
+
+    // Animate content sliding
+    Animated.timing(slideAnim, {
       toValue: tab === 'due' ? 0 : 1,
+      duration: 400,
       useNativeDriver: true,
-      tension: 20,
-      friction: 8,
+    }).start();
+
+    // Animate tab indicator
+    Animated.timing(tabIndicatorAnim, {
+      toValue: tab === 'due' ? 0 : 1,
+      duration: 400,
+      useNativeDriver: true,
     }).start();
   };
 
-  const renderDueFeesTab = () => <DueFeesTab />;
+  const translateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -width],
+    extrapolate: 'clamp',
+  });
 
-  const renderPaidFeesTab = () => <PaidFeesTab />;
+  const tabIndicatorTranslateX = tabIndicatorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [2, (width - Spacing.lg * 2 - 8) / 2 + 4], // Properly center on second tab
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.container}>
       {/* Tab Header */}
       <View style={styles.tabHeader}>
         <View style={styles.tabContainer}>
+          {/* Animated Tab Indicator */}
+          <Animated.View
+            style={[
+              styles.tabIndicator,
+              {
+                transform: [{ translateX: tabIndicatorTranslateX }],
+              },
+            ]}
+          />
+
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'due' && styles.activeTab]}
+            style={styles.tab}
             onPress={() => handleTabChange('due')}
             activeOpacity={0.8}
           >
@@ -70,7 +81,7 @@ const FeeManagementContainer: React.FC = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'paid' && styles.activeTab]}
+            style={styles.tab}
             onPress={() => handleTabChange('paid')}
             activeOpacity={0.8}
           >
@@ -92,19 +103,16 @@ const FeeManagementContainer: React.FC = () => {
           style={[
             styles.animatedContent,
             {
-              transform: [
-                {
-                  translateX: slideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -width],
-                  }),
-                },
-              ],
+              transform: [{ translateX }],
             },
           ]}
         >
-          <View style={styles.tabPanel}>{renderDueFeesTab()}</View>
-          <View style={styles.tabPanel}>{renderPaidFeesTab()}</View>
+          <View style={styles.tabPanel}>
+            <DueFeesTab />
+          </View>
+          <View style={styles.tabPanel}>
+            <PaidFeesTab />
+          </View>
         </Animated.View>
       </View>
     </View>
@@ -133,6 +141,21 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 4,
     height: 48,
+    position: 'relative',
+  },
+  tabIndicator: {
+    position: 'absolute',
+    top: 4,
+    left: 0,
+    width: (width - Spacing.lg * 2 - 8) / 2, // Half width minus padding and margins
+    height: 40,
+    backgroundColor: Colors.primary,
+    borderRadius: 50,
+    elevation: 4,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   tab: {
     flex: 1,
@@ -140,14 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 50,
     marginHorizontal: 2,
-  },
-  activeTab: {
-    backgroundColor: Colors.primary,
-    elevation: 4,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    zIndex: 1,
   },
   tabText: {
     fontSize: FontSizes.medium,
@@ -170,89 +186,6 @@ const styles = StyleSheet.create({
   tabPanel: {
     width: width,
     flex: 1,
-  },
-  tabContentContainer: {
-    flex: 1,
-    padding: Spacing.lg,
-  },
-  tabTitle: {
-    fontSize: FontSizes.large,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.lg,
-    textAlign: 'center',
-  },
-  studentCard: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
-  },
-  studentInfo: {
-    flex: 1,
-  },
-  studentName: {
-    fontSize: FontSizes.medium,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  studentRoll: {
-    fontSize: FontSizes.small,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-    fontWeight: '500',
-  },
-  dueDate: {
-    fontSize: FontSizes.small,
-    color: Colors.warning,
-    fontWeight: '600',
-    marginBottom: Spacing.xs,
-  },
-  paidDate: {
-    fontSize: FontSizes.small,
-    color: Colors.success,
-    fontWeight: '600',
-    marginBottom: Spacing.xs,
-  },
-  phoneNumber: {
-    fontSize: FontSizes.small,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  amount: {
-    fontSize: FontSizes.small,
-    color: Colors.primary,
-    fontWeight: '700',
-  },
-  statusBadge: {
-    backgroundColor: Colors.warning,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 20,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  paidBadge: {
-    backgroundColor: Colors.success,
-  },
-  statusText: {
-    fontSize: FontSizes.small,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  paidText: {
-    color: Colors.white,
   },
 });
 

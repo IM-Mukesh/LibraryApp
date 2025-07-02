@@ -17,6 +17,7 @@ const Colors = {
   neon: '#00F5FF',
   cardGradient: '#1E3A8A',
   surface: '#f2f2f2',
+  gray: '#A0A0A0',
 };
 
 const Spacing = {

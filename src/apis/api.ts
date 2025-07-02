@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 import { BASE_URL } from './config';
-
+import { AppVersion } from '../types';
 // ---------------- TYPES ----------------
 
 export interface Library {
@@ -253,6 +253,29 @@ export const getRecentPayments = async (): Promise<RecentPayment[]> => {
     );
     throw new Error(
       error.response?.data?.message || 'Failed to fetch recent payments',
+    );
+  }
+};
+
+export const getLatestAppVersion = async (): Promise<AppVersion> => {
+  try {
+    const response = await api.get('/api/version/latest');
+
+    console.log('got result is', response);
+
+    // Assuming the response is just the version object
+    if (!response.data || !response.data.latestVersion) {
+      throw new Error('Invalid response from version API');
+    }
+
+    return response.data as AppVersion;
+  } catch (error: any) {
+    console.error(
+      'getLatestAppVersion error:',
+      error.response?.data || error.message,
+    );
+    throw new Error(
+      error.response?.data?.message || 'Failed to fetch app version',
     );
   }
 };

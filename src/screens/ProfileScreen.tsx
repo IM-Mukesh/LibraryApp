@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   infoValue: {
-    fontSize: FontSizes.medium,
+    fontSize: 14,
     color: Colors.textPrimary,
     fontWeight: '600',
     letterSpacing: 0.3,

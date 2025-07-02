@@ -188,12 +188,12 @@ const SummaryCards = forwardRef<SummaryCardsRef, SummaryCardsProps>(
             <Text style={styles.value}>
               ₹{stats.currentMonthCollection?.total || 0}
             </Text>
-            <Text style={styles.subLabel}>
+            {/* <Text style={styles.subLabel}>
               Cash: ₹{stats.currentMonthCollection?.cash || 0}
             </Text>
             <Text style={styles.subLabel}>
               Online: ₹{stats.currentMonthCollection?.online || 0}
-            </Text>
+            </Text> */}
           </View>
 
           <View style={styles.divider} />
@@ -203,12 +203,12 @@ const SummaryCards = forwardRef<SummaryCardsRef, SummaryCardsProps>(
             <Text style={styles.value}>
               ₹{stats.lastMonthCollection?.total || 0}
             </Text>
-            <Text style={styles.subLabel}>
+            {/* <Text style={styles.subLabel}>
               Cash: ₹{stats.lastMonthCollection?.cash || 0}
             </Text>
             <Text style={styles.subLabel}>
               Online: ₹{stats.lastMonthCollection?.online || 0}
-            </Text>
+            </Text> */}
           </View>
         </View>
       </View>

@@ -17,19 +17,23 @@ interface Student {
   aadhar: string;
   shift: string;
   avatar?: string;
+  isEnabled?: boolean;
 }
 
 interface StudentCardProps {
   student: Student;
   onPaymentPress: () => void;
+  onDetailsPress: () => void;
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({
   student,
   onPaymentPress,
+  onDetailsPress,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const dollarScaleAnim = useRef(new Animated.Value(1)).current;
+  const arrowScaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const [isPressed, setIsPressed] = useState(false);
 
@@ -40,23 +44,20 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const getShiftColor = (shift: string): string => {
     switch (shift.toLowerCase()) {
       case 'morning':
-      case 'First':
       case 'first':
         return Colors.success;
       case 'afternoon':
-      case 'Second':
       case 'second':
         return Colors.warning;
       case 'evening':
       case 'third':
-      case 'Third':
         return Colors.primary;
       default:
         return Colors.textSecondary;
     }
   };
 
-  const handlePressIn = () => {
+  const handleCardPressIn = () => {
     setIsPressed(true);
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -72,7 +73,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
     ]).start();
   };
 
-  const handlePressOut = () => {
+  const handleCardPressOut = () => {
     setIsPressed(false);
     Animated.parallel([
       Animated.spring(scaleAnim, {
@@ -88,25 +89,41 @@ const StudentCard: React.FC<StudentCardProps> = ({
     ]).start();
   };
 
-  const handleDollarPressIn = () => {
+  const handlePaymentPressIn = () => {
     Animated.sequence([
       Animated.timing(dollarScaleAnim, {
-        toValue: 0.8,
+        toValue: 0.85,
         duration: 100,
         useNativeDriver: true,
       }),
       Animated.spring(dollarScaleAnim, {
-        toValue: 1.2,
+        toValue: 1.1,
         friction: 4,
         useNativeDriver: true,
       }),
     ]).start();
   };
 
-  const handleDollarPressOut = () => {
+  const handlePaymentPressOut = () => {
     Animated.spring(dollarScaleAnim, {
       toValue: 1,
       friction: 6,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleArrowPressIn = () => {
+    Animated.timing(arrowScaleAnim, {
+      toValue: 0.9,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleArrowPressOut = () => {
+    Animated.spring(arrowScaleAnim, {
+      toValue: 1,
+      friction: 5,
       useNativeDriver: true,
     }).start();
   };
@@ -118,78 +135,156 @@ const StudentCard: React.FC<StudentCardProps> = ({
 
   const shadowOpacity = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.1, 0.3],
+    outputRange: [0.1, 0.25],
   });
 
+  const ArrowIcon = () => (
+    <View style={styles.arrowIcon}>
+      <View style={[styles.arrowLine, styles.arrowLineTop]} />
+      <View style={[styles.arrowLine, styles.arrowLineBottom]} />
+    </View>
+  );
+
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          borderColor: borderColor,
-          shadowOpacity: shadowOpacity,
-          transform: [{ scale: scaleAnim }],
-        },
-      ]}
-      id={student._id}
+    <TouchableOpacity
+      activeOpacity={1}
+      onPressIn={handleCardPressIn}
+      onPressOut={handleCardPressOut}
+      onPress={onDetailsPress}
     >
-      <View style={styles.content}>
-        {/* Avatar and Main Info */}
-        <View style={styles.leftSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitial(student.name)}</Text>
-          </View>
-          <View style={styles.info}>
-            <Text style={styles.name} numberOfLines={1}>
-              {student.name}
-            </Text>
-            <View style={styles.shiftContainer}>
-              <View
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            borderColor: borderColor,
+            shadowOpacity: shadowOpacity,
+            transform: [{ scale: scaleAnim }],
+          },
+          student.isEnabled === false && styles.disabledCard,
+        ]}
+        id={student._id}
+      >
+        <View style={styles.content}>
+          {/* Avatar and Main Info */}
+          <View style={styles.leftSection}>
+            <View
+              style={[
+                styles.avatar,
+                student.isEnabled === false && styles.disabledAvatar,
+              ]}
+            >
+              <Text
                 style={[
-                  styles.shiftBadge,
-                  { backgroundColor: getShiftColor(student.shift) + '20' },
+                  styles.avatarText,
+                  student.isEnabled === false && styles.disabledAvatarText,
                 ]}
               >
-                <View
-                  style={[
-                    styles.shiftDot,
-                    { backgroundColor: getShiftColor(student.shift) },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.shiftText,
-                    { color: getShiftColor(student.shift) },
-                  ]}
-                >
-                  {student.shift}
-                </Text>
+                {getInitial(student.name)}
+              </Text>
+            </View>
+            <View style={styles.info}>
+              <Text
+                style={[
+                  styles.name,
+                  student.isEnabled === false && styles.disabledText,
+                ]}
+                numberOfLines={1}
+              >
+                {student.name}
+              </Text>
+              <View style={styles.detailsRow}>
+                <View style={styles.shiftContainer}>
+                  <View
+                    style={[
+                      styles.shiftBadge,
+                      { backgroundColor: getShiftColor(student.shift) + '20' },
+                      student.isEnabled === false && styles.disabledBadge,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.shiftDot,
+                        { backgroundColor: getShiftColor(student.shift) },
+                        student.isEnabled === false && styles.disabledDot,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.shiftText,
+                        { color: getShiftColor(student.shift) },
+                        student.isEnabled === false && styles.disabledShiftText,
+                      ]}
+                    >
+                      {student.shift}
+                    </Text>
+                  </View>
+                </View>
+                {student.isEnabled === false && (
+                  <View style={styles.disabledBadge}>
+                    <Text style={styles.disabledBadgeText}>Disabled</Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
-        </View>
 
-        {/* Payment Button */}
-        <TouchableOpacity
-          style={styles.paymentButton}
-          onPress={onPaymentPress}
-          onPressIn={handleDollarPressIn}
-          onPressOut={handleDollarPressOut}
-          activeOpacity={0.8}
-        >
-          <Animated.View
-            style={[
-              styles.dollarContainer,
-              {
-                transform: [{ scale: dollarScaleAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.dollarSymbol}>₹</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
+          {/* Action Buttons */}
+          <View style={styles.rightSection}>
+            {/* Payment Button */}
+            <TouchableOpacity
+              style={[
+                styles.paymentButton,
+                student.isEnabled === false && styles.disabledButton,
+              ]}
+              onPress={onPaymentPress}
+              onPressIn={handlePaymentPressIn}
+              onPressOut={handlePaymentPressOut}
+              activeOpacity={0.8}
+              disabled={student.isEnabled === false}
+            >
+              <Animated.View
+                style={[
+                  styles.dollarContainer,
+                  {
+                    transform: [{ scale: dollarScaleAnim }],
+                  },
+                  student.isEnabled === false && styles.disabledDollarContainer,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.dollarSymbol,
+                    student.isEnabled === false && styles.disabledDollarSymbol,
+                  ]}
+                >
+                  ₹
+                </Text>
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* Arrow Button */}
+            <TouchableOpacity
+              style={styles.arrowButton}
+              onPressIn={handleArrowPressIn}
+              onPressOut={handleArrowPressOut}
+              onPress={onDetailsPress}
+              activeOpacity={0.7}
+            >
+              <Animated.View
+                style={[
+                  styles.arrowContainer,
+                  {
+                    transform: [{ scale: arrowScaleAnim }],
+                  },
+                ]}
+              >
+                <ArrowIcon />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
   );
 };
 
@@ -203,6 +298,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     marginHorizontal: 2,
+    marginVertical: Spacing.xs,
+  },
+  disabledCard: {
+    opacity: 0.6,
+    backgroundColor: Colors.background,
   },
   content: {
     flexDirection: 'row',
@@ -216,8 +316,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 50,
-    height: 50,
+    width: 36,
+    height: 36,
     borderRadius: 25,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
@@ -228,9 +328,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
+  disabledAvatar: {
+    backgroundColor: Colors.textSecondary,
+  },
   avatarText: {
     fontSize: FontSizes.large,
     fontWeight: '700',
+    color: Colors.white,
+  },
+  disabledAvatarText: {
     color: Colors.white,
   },
   info: {
@@ -243,9 +349,18 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
+  disabledText: {
+    color: Colors.textSecondary,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
   shiftContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: Spacing.sm,
   },
   shiftBadge: {
     flexDirection: 'row',
@@ -254,36 +369,99 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs / 2,
     borderRadius: Radius.sm,
   },
+  disabledBadge: {
+    backgroundColor: Colors.textSecondary + '20',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs / 2,
+    borderRadius: Radius.sm,
+  },
+  disabledBadgeText: {
+    fontSize: FontSizes.small,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
   shiftDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     marginRight: Spacing.xs,
   },
+  disabledDot: {
+    backgroundColor: Colors.textSecondary,
+  },
   shiftText: {
     fontSize: FontSizes.small,
     fontWeight: '500',
   },
-  paymentButton: {
+  disabledShiftText: {
+    color: Colors.textSecondary,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginLeft: Spacing.md,
   },
+  paymentButton: {
+    marginRight: Spacing.sm,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
   dollarContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 50,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.success,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 3,
     shadowColor: Colors.success,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 4,
+  },
+  disabledDollarContainer: {
+    backgroundColor: Colors.textSecondary,
   },
   dollarSymbol: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.white,
+  },
+  disabledDollarSymbol: {
+    color: Colors.white,
+  },
+  arrowButton: {
+    padding: Spacing.xs,
+  },
+  arrowContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
+  },
+  arrowIcon: {
+    width: 12,
+    height: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrowLine: {
+    position: 'absolute',
+    width: 8,
+    height: 1.5,
+    backgroundColor: Colors.primary,
+    borderRadius: 1,
+  },
+  arrowLineTop: {
+    transform: [{ rotate: '45deg' }, { translateY: -2 }],
+  },
+  arrowLineBottom: {
+    transform: [{ rotate: '-45deg' }, { translateY: 2 }],
   },
 });
 

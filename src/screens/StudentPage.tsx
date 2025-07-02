@@ -16,7 +16,6 @@ import SearchField from '../components/Operation/SearchField';
 import StudentCard from '../components/Operation/StudentCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { getAllStudents, setAuthToken, Student } from '../apis/api';
 import { setStudentPayment } from '../redux/slices/paymentSlice';
 const { width } = Dimensions.get('window');
@@ -32,8 +31,6 @@ const StudentPage: React.FC = ({ navigation }: any) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [paymentBottomsheet, setPaymentBottomsheet] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -88,6 +85,7 @@ const StudentPage: React.FC = ({ navigation }: any) => {
       <StudentCard
         student={item}
         onPaymentPress={() => handlePaymentPress(item)}
+        onDetailsPress={() => {}}
       />
     ),
     [],
@@ -142,21 +140,6 @@ const StudentPage: React.FC = ({ navigation }: any) => {
           </View>
         )}
       </View>
-
-      {/* Payment Debug Info */}
-      {paymentBottomsheet && selectedStudent && (
-        <View style={styles.debugInfo}>
-          <Text style={styles.debugText}>
-            Payment Bottomsheet: Open for {selectedStudent.name}
-          </Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setPaymentBottomsheet(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 };
