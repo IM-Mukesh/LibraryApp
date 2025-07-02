@@ -185,7 +185,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
               },
             ]}
           >
-            <Text style={styles.dollarSymbol}>$</Text>
+            <Text style={styles.dollarSymbol}>₹</Text>
           </Animated.View>
         </TouchableOpacity>
       </View>

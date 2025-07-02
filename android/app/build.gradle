@@ -7,15 +7,14 @@ react {
 }
 
 def enableProguardInReleaseBuilds = false
-
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
-
     namespace "com.gyaanshelf"
+    compileSdk rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    ndkVersion rootProject.ext.ndkVersion
+
     defaultConfig {
         applicationId "com.gyaanshelf"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -43,12 +42,24 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
 dependencies {
     implementation("com.facebook.react:react-android")
-    implementation "androidx.security:security-crypto:1.0.0" // ✅ Correct placement
 
+    // ✅ Modern AndroidX crypto (safe to use)
+    implementation "androidx.security:security-crypto:1.0.0"
+
+    // JS engine: Hermes or JSC
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
@@ -56,4 +67,5 @@ dependencies {
     }
 }
 
+// ✅ Required for react-native-vector-icons
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

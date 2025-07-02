@@ -1,25 +1,22 @@
 // components/HeaderCard.tsx
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { Colors, Spacing, FontSizes, Radius } from '../theme/theme';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 
 interface HeaderCardProps {
-  // libraryName: string;
-  // adminName: string;
-  // adminEmail: string;
-  // status: 'active' | 'blocked';
+  onProfilePress: () => void;
 }
 
-const HeaderCard: React.FC<HeaderCardProps> = (
-  {
-    // libraryName,
-    // adminName,
-    // adminEmail,
-    // status,
-  },
-) => {
+const HeaderCard: React.FC<HeaderCardProps> = ({ onProfilePress }) => {
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const libraryData = useSelector((state: RootState) => state?.auth?.library);
@@ -44,33 +41,54 @@ const HeaderCard: React.FC<HeaderCardProps> = (
   };
 
   const getStatus = () => {
-    if (libraryData?.status === 'active') {
-      return 'Active';
-    }
-    return 'Blocked';
+    return libraryData?.status === 'active' ? 'Active' : 'Blocked';
+  };
+
+  const handleProfilePress = () => {
+    onProfilePress();
   };
 
   return (
     <Animated.View
       style={[
         styles.container,
-        {
-          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-        },
+        { transform: [{ translateY: slideAnim }, { scale: scaleAnim }] },
       ]}
     >
-      <View style={styles.header}>
-        <Text style={styles.libraryName}>
-          {libraryData?.name.toUpperCase()}
-        </Text>
-        <View
-          style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}
+      <View style={styles.row}>
+        <TouchableOpacity
+          onPress={handleProfilePress}
+          style={styles.iconWrapper}
+          activeOpacity={0.8}
         >
-          <Text style={styles.statusText}>{getStatus()}</Text>
+          <Image
+            source={{
+              uri: 'https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg',
+            }}
+            style={styles.icon}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+
+        <View style={styles.cardContent}>
+          <View style={styles.headerRow}>
+            <Text style={styles.libraryName} numberOfLines={1}>
+              {libraryData?.name?.toUpperCase()}
+            </Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor() },
+              ]}
+            >
+              <Text style={styles.statusText}>{getStatus()}</Text>
+            </View>
+          </View>
+          <Text style={styles.adminName} numberOfLines={1}>
+            {libraryData?.adminName.toUpperCase()}
+          </Text>
         </View>
       </View>
-      <Text style={styles.adminName}>{libraryData?.adminName}</Text>
-      {/* <Text style={styles.adminEmail}>{adminEmail}</Text> */}
     </Animated.View>
   );
 };
@@ -83,20 +101,34 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.md,
     marginTop: Spacing.md,
     shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
     marginBottom: 4,
   },
-  header: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+  },
+  iconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginRight: Spacing.md,
+  },
+  icon: {
+    width: '100%',
+    height: '100%',
+  },
+  cardContent: {
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
   },
   libraryName: {
     fontSize: FontSizes.large,
@@ -108,6 +140,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: Radius.lg,
+    marginLeft: Spacing.sm,
   },
   statusText: {
     color: Colors.white,
@@ -119,11 +152,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 2,
     color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  adminEmail: {
-    fontSize: FontSizes.medium,
-    color: Colors.textSecondary,
   },
 });
 
