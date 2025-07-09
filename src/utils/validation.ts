@@ -55,12 +55,6 @@ export const validateStudentForm = (
   }
 
   // Age validation
-  const age = parseInt(data.age);
-  if (!data.age.trim()) {
-    errors.age = 'Age is required';
-  } else if (isNaN(age) || age < 10 || age > 60) {
-    errors.age = 'Age must be between 10 and 60';
-  }
 
   // Date validations
   if (!data.joiningDate) {

@@ -13,7 +13,13 @@ import PaidFeesTab from './PaidFeesTab';
 
 const { width } = Dimensions.get('window');
 
-const FeeManagementContainer: React.FC = () => {
+interface ManagementContainerProps {
+  refreshing: boolean;
+}
+
+const FeeManagementContainer: React.FC<ManagementContainerProps> = ({
+  refreshing,
+}) => {
   const [activeTab, setActiveTab] = useState<'due' | 'paid'>('due');
   const slideAnim = useRef(new Animated.Value(0)).current;
   const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
@@ -26,14 +32,14 @@ const FeeManagementContainer: React.FC = () => {
     // Animate content sliding
     Animated.timing(slideAnim, {
       toValue: tab === 'due' ? 0 : 1,
-      duration: 400,
+      duration: 300,
       useNativeDriver: true,
     }).start();
 
     // Animate tab indicator
     Animated.timing(tabIndicatorAnim, {
       toValue: tab === 'due' ? 0 : 1,
-      duration: 400,
+      duration: 300,
       useNativeDriver: true,
     }).start();
   };

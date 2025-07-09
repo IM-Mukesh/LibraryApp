@@ -1,4 +1,3 @@
-// src/components/StudentPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -18,15 +17,25 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { getAllStudents, setAuthToken, Student } from '../apis/api';
 import { setStudentPayment } from '../redux/slices/paymentSlice';
-const { width } = Dimensions.get('window');
+import { setStudents } from '../redux/slices/studentSlice';
 import { useHideTabBarOnKeyboard } from '../hooks/useHideTabBarOnKeyboard';
+import {
+  useFocusEffect,
+  useRoute,
+  useNavigation,
+} from '@react-navigation/native';
+// import { Student } from '../types/student';
+
+const { width } = Dimensions.get('window');
 
 const StudentPage: React.FC = ({ navigation }: any) => {
   useHideTabBarOnKeyboard(navigation);
-  const { token } = useSelector((state: RootState) => state.auth);
-  // const navigationWithProp = useNavigation<NavigationProp>();
   const dispatch = useDispatch();
-  const [students, setStudents] = useState<Student[]>([]);
+  const { token } = useSelector((state: RootState) => state.auth);
+  const students = useSelector((state: RootState) => state.student.students);
+
+  const route = useRoute();
+  const nav = useNavigation();
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -36,15 +45,27 @@ const StudentPage: React.FC = ({ navigation }: any) => {
     try {
       if (token) setAuthToken(token);
       const data = await getAllStudents();
-      setStudents(data);
+      dispatch(setStudents(data));
     } catch (err) {
       console.error('Failed to fetch students:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, [token, dispatch]);
 
+  // Initial load and refresh when navigating back from student creation
+  useFocusEffect(
+    useCallback(() => {
+      if ((route as any)?.params?.studentCreated) {
+        fetchStudents();
+        // Reset the param so it doesn't repeat
+        navigation.setParams({ studentCreated: false });
+      }
+    }, [fetchStudents, route, navigation]),
+  );
+
+  // Initial load
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
@@ -77,7 +98,6 @@ const StudentPage: React.FC = ({ navigation }: any) => {
   const handlePaymentPress = (student: Student) => {
     dispatch(setStudentPayment(student));
     navigation.navigate('StudentPayment');
-    // navigationWithProp.navigate('StudentPayment', { studentData: student });
   };
 
   const renderStudent = useCallback(
@@ -100,7 +120,7 @@ const StudentPage: React.FC = ({ navigation }: any) => {
         <SearchField
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search by name, mobile, or Aadhar..."
+          placeholder="Name, mobile, or Aadhar..."
         />
         <PlusButton onPress={handlePlusPress} />
       </View>
@@ -189,34 +209,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium,
     color: Colors.textSecondary,
     textAlign: 'center',
-  },
-  debugInfo: {
-    position: 'absolute',
-    bottom: 50,
-    left: Spacing.md,
-    right: Spacing.md,
-    backgroundColor: Colors.primary,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-  },
-  debugText: {
-    color: Colors.white,
-    fontSize: FontSizes.medium,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
-  },
-  closeButton: {
-    backgroundColor: Colors.white,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.sm,
-    alignSelf: 'center',
-  },
-  closeButtonText: {
-    color: Colors.primary,
-    fontSize: FontSizes.small,
-    fontWeight: '600',
   },
 });
 

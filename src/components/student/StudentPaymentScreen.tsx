@@ -29,7 +29,7 @@ import {
 import { useHideTabBarOnKeyboard } from '../../hooks/useHideTabBarOnKeyboard';
 import NotesInput from './PaymentNotes';
 const { width } = Dimensions.get('window');
-
+import { StatusModal } from '../StatusModal';
 interface StudentData {
   _id: string;
   aadhar: string;
@@ -81,7 +81,8 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
   const [slideAnim] = useState(new Animated.Value(50));
   const [scaleAnim] = useState(new Animated.Value(0.95));
   const { token } = useSelector((state: RootState) => state.auth);
-
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<'success' | 'error' | null>(null);
   const libId = useSelector((state: RootState) => state?.auth?.library?._id);
   // New date range states
   const [fromMonth, setFromMonth] = useState(new Date());
@@ -110,6 +111,8 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
       return;
     }
   }, [studentData, navigation]);
+
+  console.log('stud data', studentData);
 
   // Animation setup
   useEffect(() => {
@@ -208,7 +211,7 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
       discount: parseInt(discountAmount),
       paymentMethod: paymentMode,
       fromMonth: fromMonth.toISOString(),
-      toMonth: toMonth.toISOString(),
+      toMonth: newDueDate.toISOString(),
       nextDueDate: newDueDate.toISOString(),
     };
     if (notes !== '' && notes.trim()) {
@@ -219,9 +222,21 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
 
     try {
       const data = await createPayment(payload);
-      Alert.alert('Success', `Payment created: ₹${data.amount}`);
+      // Alert.alert('Success', `Payment created: ₹${data.amount}`);
+      setModalType('success');
+      setShowModal(true);
+      setTimeout(() => {
+        setShowModal(false);
+        if (navigation) {
+          // navigation.goBack();
+          navigation.navigate('StudentList', { paymentCreated: true });
+        }
+      }, 4000);
     } catch (err) {
-      Alert.alert('Error', 'Failed to create payment');
+      setModalType('error');
+      setShowModal(true);
+
+      // Alert.alert('Error', 'Failed to create payment');
       console.error(err);
     }
   };
@@ -301,7 +316,10 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
               <InfoRow label="Mobile" value={studentData.mobile} priority />
               <InfoRow label="Aadhar" value={studentData.aadhar} priority />
               <InfoRow label="Father's Name" value={studentData.fatherName} />
-              <InfoRow label="Age" value={`${studentData.age} years`} />
+              <InfoRow
+                label="Date of Birth"
+                value={formatDate(studentData.dateOfBirth)}
+              />
               <InfoRow label="Gender" value={studentData.gender} />
               <InfoRow label="Shift" value={studentData.shift} />
               <InfoRow label="Address" value={studentData.address} />
@@ -327,7 +345,7 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
 
           {/* Payment Section */}
           <View style={styles.paymentCard}>
-            <Text style={styles.cardTitle}>Payment Configuration</Text>
+            <Text style={styles.cardTitle}>Billing & Payments</Text>
 
             {/* Amount Input */}
             <View style={styles.amountSection}>
@@ -389,7 +407,7 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
             </View>
 
             {/* Payment Period Section */}
-            <View style={styles.paymentPeriodSection}>
+            {/* <View style={styles.paymentPeriodSection}>
               <Text style={styles.sectionLabel}>Payment Period</Text>
 
               <View style={styles.dateRangeContainer}>
@@ -403,9 +421,6 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
                     containerStyle={styles.datePickerContainer}
                     minimumDate={new Date()}
                   />
-                  {/* <Text style={styles.dateDisplayText}>
-                    {formatDateYYYYMMDD(fromMonth)}
-                  </Text> */}
                 </View>
 
                 <View style={styles.dateSeparator}>
@@ -416,18 +431,15 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
                   <Text style={styles.dateFieldLabel}>To Month</Text>
                   <DatePicker
                     label="End Month"
-                    value={toMonth}
+                    value={newDueDate}
                     onChange={setToMonth}
                     icon={false}
                     containerStyle={styles.datePickerContainer}
                     minimumDate={fromMonth}
                   />
-                  {/* <Text style={styles.dateDisplayText}>
-                    {formatDateYYYYMMDD(toMonth)}
-                  </Text> */}
                 </View>
               </View>
-            </View>
+            </View> */}
 
             {/* New Due Date */}
             <View style={styles.dueDateSection}>
@@ -483,6 +495,17 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
             </Text>
           </TouchableOpacity>
         </ScrollView>
+        <StatusModal
+          visible={showModal}
+          type={modalType}
+          onClose={() => {
+            setShowModal(false);
+          }}
+          successTitle="Paid Successfully!"
+          successMessage={`${studentData?.name} payment done of Rupees ${totalAmount}`}
+          errorTitle="Payment Failed"
+          errorMessage={`${studentData?.name} payment failed please try again`}
+        />
       </Animated.View>
     </SafeAreaView>
   );
@@ -745,7 +768,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   dueDateSection: {
-    // marginTop: Spacing.sm,
+    marginTop: Spacing.lg,
   },
   datePickerContainer: {
     marginTop: Spacing.sm,

@@ -26,22 +26,53 @@ const Spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
+  xxxl: 64,
 };
 
 const FontSizes = {
+  xs: 10,
   small: 12,
   medium: 16,
   large: 20,
   xlarge: 24,
+  xxlarge: 32,
+  xxxlarge: 48,
 };
 
 const Radius = {
+  xs: 2,
   sm: 4,
   md: 8,
   lg: 12,
   xl: 16,
   xxl: 20,
+  xxxl: 24,
   full: 9999,
 };
 
-export { Colors, Spacing, FontSizes, Radius };
+const Shadows = {
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  button: {
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+};
+
+export { Colors, Spacing, FontSizes, Radius, Shadows };

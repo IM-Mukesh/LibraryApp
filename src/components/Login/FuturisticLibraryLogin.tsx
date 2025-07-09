@@ -12,175 +12,378 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
+  TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
-// import { loginSuccess } from '../../redux/slices/authSlice';
 import { setAuthToken } from '../../apis/api';
-import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
+import { Colors, Spacing, FontSizes, Radius, Shadows } from '../../theme/theme';
 import { loginLibrary } from '../../apis/api';
 import FloatingParticle from './FloatingParticle';
 import PulsingOrb from './PulsingOrb';
-import AnimatedInput from './AnimatedInput';
-import HolographicButton from './HolographicButton';
 import LoginHeader from './LoginHeader';
 import { USER } from '../../redux/slices/authSlice';
 
 const { width, height } = Dimensions.get('window');
 
+// Local theme colors for this page only
+const LoginTheme = {
+  background: '#FAFAFA',
+  cardBackground: '#FFFFFF',
+  inputBackground: '#F8F9FA',
+  inputBorder: '#E1E5E9',
+  inputFocusBorder: Colors.primary,
+  accent: Colors.primary,
+  success: '#10B981',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  glassBorder: 'rgba(255, 255, 255, 0.2)',
+  overlayBackground: 'rgba(255, 255, 255, 0.95)',
+};
+
+interface AnimatedInputProps {
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: 'email-address' | 'default';
+  showPasswordToggle?: boolean;
+  onTogglePassword?: () => void;
+}
+
+const AnimatedInput: React.FC<AnimatedInputProps> = ({
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry = false,
+  keyboardType = 'default',
+  showPasswordToggle = false,
+  onTogglePassword,
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const borderColorAnim = useRef(new Animated.Value(0)).current;
+  const labelAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(borderColorAnim, {
+      toValue: isFocused ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+
+    Animated.timing(labelAnim, {
+      toValue: isFocused || value ? 1 : 0,
+      duration: 200,
+      easing: Easing.ease,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocused, value]);
+
+  const borderColor = borderColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [LoginTheme.inputBorder, LoginTheme.inputFocusBorder],
+  });
+
+  const labelStyle = {
+    position: 'absolute' as const,
+    left: 16,
+    top: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [15, -8],
+    }),
+    fontSize: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [FontSizes.medium, FontSizes.small],
+    }),
+    color: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [LoginTheme.textMuted, LoginTheme.accent],
+    }),
+    backgroundColor:
+      isFocused || value ? LoginTheme.cardBackground : 'transparent',
+    paddingHorizontal: isFocused || value ? 6 : 0,
+    fontWeight: '500' as const,
+  };
+
+  return (
+    <View style={styles.inputWrapper}>
+      <Animated.View style={[styles.inputContainer, { borderColor }]}>
+        <TextInput
+          style={styles.textInput}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          placeholderTextColor="transparent"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {showPasswordToggle && (
+          <TouchableOpacity
+            style={styles.passwordToggle}
+            onPress={onTogglePassword}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.passwordToggleIcon}>
+              {secureTextEntry ? '👁️' : '🙈'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </Animated.View>
+      <Animated.Text style={labelStyle}>{placeholder}</Animated.Text>
+    </View>
+  );
+};
+
+const ModernButton: React.FC<{
+  title: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+}> = ({ title, onPress, loading = false, disabled = false }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    if (disabled || loading) return;
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.96,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    if (disabled || loading) return;
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.modernButton,
+        loading && styles.modernButtonLoading,
+        disabled && styles.modernButtonDisabled,
+      ]}
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={loading || disabled}
+      activeOpacity={1}
+    >
+      <Animated.View
+        style={[
+          styles.modernButtonContent,
+          {
+            transform: [{ scale: scaleAnim }],
+            opacity: opacityAnim,
+          },
+        ]}
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <View style={styles.loadingSpinner} />
+            <Text style={styles.modernButtonText}>Authenticating...</Text>
+          </View>
+        ) : (
+          <Text
+            style={[
+              styles.modernButtonText,
+              disabled && styles.modernButtonTextDisabled,
+            ]}
+          >
+            {title}
+          </Text>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
 const FuturisticLibraryLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const fadeInAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(50)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
   const dispatch = useDispatch();
 
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Check if email is valid and password has minimum 4 characters
+  const isFormValid = emailRegex.test(email.trim()) && password.length >= 4;
+
   useEffect(() => {
-    // Initial animations
     Animated.parallel([
       Animated.timing(fadeInAnim, {
         toValue: 1,
-        duration: 1000,
+        duration: 800,
+        easing: Easing.ease,
         useNativeDriver: true,
       }),
-      Animated.spring(slideUpAnim, {
+      Animated.timing(slideUpAnim, {
         toValue: 0,
-        tension: 50,
-        friction: 8,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
   }, []);
 
   const handleLogin = async () => {
+    if (!isFormValid) return;
+
+    Keyboard.dismiss();
     setIsLoading(true);
+
     try {
       const { token, library } = await loginLibrary(email, password);
       setAuthToken(token);
       if (token && library) {
         dispatch(USER({ token, library, isLoggedIn: true }));
       }
-      // dispatch(loginSuccess({ token, library }));
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Something went wrong');
+      Alert.alert(
+        'Authentication Failed',
+        error.message || 'Invalid credentials',
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent
-      />
-
-      {/* Background with gradient effect */}
-      <View style={styles.backgroundGradient} />
-
-      {/* Floating particles */}
-      {Array.from({ length: 15 }).map((_, index) => (
-        <FloatingParticle key={index} delay={index * 500} />
-      ))}
-
-      {/* Pulsing orbs */}
-      <PulsingOrb
-        size={120}
-        color={Colors.primary}
-        duration={3000}
-        style={{ top: height * 0.1, right: -20 }}
-      />
-      <PulsingOrb
-        size={80}
-        color={Colors.secondary}
-        duration={2500}
-        style={{ bottom: height * 0.2, left: -20 }}
-      />
-      <PulsingOrb
-        size={60}
-        color={Colors.primary}
-        duration={2000}
-        style={{ top: height * 0.3, left: width * 0.8 }}
-      />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Animated.View
-          style={[
-            styles.mainContent,
-            {
-              opacity: fadeInAnim,
-              transform: [{ translateY: slideUpAnim }],
-            },
-          ]}
-        >
-          <LoginHeader />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent
+        />
 
-          {/* Login Form */}
-          <View style={styles.formContainer}>
-            <View style={styles.glassCard}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>SECURE ACCESS</Text>
-                <View style={styles.securityIndicator}>
-                  <View style={styles.securityDot} />
-                  <Text style={styles.securityText}>ENCRYPTED</Text>
+        {/* Light background with subtle gradient */}
+        <View style={styles.backgroundGradient} />
+
+        {/* Minimal floating particles */}
+        {Array.from({ length: 8 }).map((_, index) => (
+          <FloatingParticle key={index} delay={index * 800} />
+        ))}
+
+        {/* Subtle accent orbs */}
+        <PulsingOrb
+          size={100}
+          color={Colors.primary}
+          duration={4000}
+          style={{ top: height * 0.15, right: -30, opacity: 0.1 }}
+        />
+        <PulsingOrb
+          size={60}
+          color={Colors.secondary}
+          duration={3500}
+          style={{ bottom: height * 0.25, left: -20, opacity: 0.1 }}
+        />
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View
+            style={[
+              styles.mainContent,
+              {
+                opacity: fadeInAnim,
+                transform: [{ translateY: slideUpAnim }],
+              },
+            ]}
+          >
+            <LoginHeader />
+
+            <View style={styles.formContainer}>
+              <View style={styles.loginCard}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>Welcome Back</Text>
+                  <Text style={styles.cardSubtitle}>
+                    Sign in to your account
+                  </Text>
+                </View>
+
+                <View style={styles.formFields}>
+                  <AnimatedInput
+                    placeholder="Email Address"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                  />
+
+                  <AnimatedInput
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    showPasswordToggle={true}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                  />
+                </View>
+
+                <ModernButton
+                  title="Sign In"
+                  onPress={handleLogin}
+                  loading={isLoading}
+                  disabled={!isFormValid}
+                />
+
+                <View style={styles.footer}>
+                  <Text style={styles.footerText}>
+                    Secure authentication powered by advanced encryption
+                  </Text>
                 </View>
               </View>
-
-              <View style={styles.formFields}>
-                <AnimatedInput
-                  placeholder="Email Address"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  icon="📧"
-                />
-
-                <AnimatedInput
-                  placeholder="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  icon="🔒"
-                />
-
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </View>
-
-              <HolographicButton
-                title="INITIALIZE ACCESS"
-                onPress={handleLogin}
-                loading={isLoading}
-              />
             </View>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                Don't have access?{' '}
-                <Text style={styles.footerLink}>Request Permission</Text>
-              </Text>
-              <Text style={styles.versionText}>v2.0.25 • Quantum Secured</Text>
-            </View>
-          </View>
-        </Animated.View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: LoginTheme.background,
   },
   backgroundGradient: {
     position: 'absolute',
@@ -188,8 +391,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: Colors.background,
-    opacity: 0.9,
+    backgroundColor: LoginTheme.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -200,80 +402,126 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     justifyContent: 'center',
-    minHeight: height * 0.9,
+    minHeight: height * 0.85,
   },
   formContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
-  glassCard: {
-    backgroundColor: Colors.card,
+  loginCard: {
+    backgroundColor: LoginTheme.cardBackground,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
-    marginBottom: Spacing.lg,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 15,
+    marginHorizontal: Spacing.sm,
+    ...Shadows.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderColor: LoginTheme.glassBorder,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.xl,
   },
   cardTitle: {
-    fontSize: FontSizes.medium,
+    fontSize: FontSizes.xxlarge,
     fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: 1,
+    color: LoginTheme.textPrimary,
+    marginBottom: Spacing.xs,
   },
-  securityIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  securityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.success,
-    marginRight: Spacing.xs,
-  },
-  securityText: {
-    fontSize: FontSizes.small,
-    color: Colors.success,
-    fontWeight: '600',
+  cardSubtitle: {
+    fontSize: FontSizes.medium,
+    color: LoginTheme.textSecondary,
+    fontWeight: '400',
   },
   formFields: {
     marginBottom: Spacing.xl,
   },
-  forgotPasswordText: {
-    color: Colors.primary,
-    fontSize: FontSizes.small,
+  inputWrapper: {
+    marginBottom: Spacing.lg,
+  },
+  inputContainer: {
+    backgroundColor: LoginTheme.inputBackground,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    height: 50,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...Shadows.subtle,
+  },
+  textInput: {
+    flex: 1,
+    height: 50,
+    fontSize: FontSizes.medium,
+    color: LoginTheme.textPrimary,
+    paddingRight: 40,
+    fontWeight: '500',
+  },
+  passwordToggle: {
+    position: 'absolute',
+    right: 12,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  passwordToggleIcon: {
+    fontSize: 16,
+  },
+  modernButton: {
+    height: 52,
+    borderRadius: Radius.lg,
+    backgroundColor: LoginTheme.accent,
+    ...Shadows.button,
+    overflow: 'hidden',
+  },
+  modernButtonLoading: {
+    backgroundColor: LoginTheme.textMuted,
+  },
+  modernButtonDisabled: {
+    backgroundColor: Colors.disabled,
+  },
+  modernButtonContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modernButtonText: {
+    fontSize: FontSizes.medium,
     fontWeight: '600',
-    alignSelf: 'flex-end',
-    marginTop: Spacing.sm,
+    color: Colors.white,
+    letterSpacing: 0.5,
+  },
+  modernButtonTextDisabled: {
+    color: Colors.white,
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingSpinner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: Colors.white,
+    borderTopColor: 'transparent',
+    marginRight: Spacing.sm,
   },
   footer: {
     alignItems: 'center',
-    paddingTop: Spacing.lg,
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: LoginTheme.inputBorder,
   },
   footerText: {
-    color: Colors.textSecondary,
     fontSize: FontSizes.small,
+    color: LoginTheme.textMuted,
     textAlign: 'center',
-  },
-  footerLink: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  versionText: {
-    color: Colors.textSecondary,
-    fontSize: FontSizes.small - 2,
-    marginTop: Spacing.sm,
-    opacity: 0.7,
+    fontWeight: '400',
   },
 });
 

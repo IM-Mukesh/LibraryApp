@@ -16,6 +16,7 @@ import { useDispatch } from 'react-redux';
 import { logout } from '../../redux/slices/authSlice';
 import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
 import ConfirmationPopup from '../ConfirmationComponent';
+import { APP_VERSION } from '../../apis/config';
 
 interface SidebarProps {
   isVisible: boolean;
@@ -37,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const dispatch = useDispatch();
 
   const menuItems = [
-    { id: 1, title: 'Attendance' },
+    // { id: 1, title: 'Attendance' },
     { id: 2, title: 'Expenses' },
     { id: 3, title: 'Settings' },
   ];
@@ -128,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Dashboard v1.0</Text>
+            <Text style={styles.footerText}>{APP_VERSION}</Text>
           </View>
         </Animated.View>
       </View>
@@ -182,8 +183,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 1001,
-    borderTopRightRadius: Radius.lg,
-    borderBottomRightRadius: Radius.lg,
+    // borderTopRightRadius: Radius.lg,
+    // borderBottomRightRadius: Radius.lg,
   },
   header: {
     flexDirection: 'row',
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     marginHorizontal: Spacing.md,
-    marginVertical: Spacing.xs,
+    marginVertical: Spacing.sm,
     borderRadius: Radius.md,
     backgroundColor: Colors.background,
     elevation: 2,
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? Spacing.xl * 2 : Spacing.xl,
+    paddingBottom: Platform.OS === 'ios' ? Spacing.xl * 2 : Spacing.md,
     paddingTop: Spacing.md,
   },
   footerText: {

@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Easing,
 } from 'react-native';
 import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
 
@@ -37,9 +36,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const glowAnim = useRef(new Animated.Value(0)).current;
   const [isPressed, setIsPressed] = useState(false);
 
-  const getInitial = (name: string): string => {
-    return name.charAt(0).toUpperCase();
-  };
+  const getInitial = (name: string): string => name.charAt(0).toUpperCase();
 
   const getShiftColor = (shift: string): string => {
     switch (shift.toLowerCase()) {
@@ -60,17 +57,27 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const handleCardPressIn = () => {
     setIsPressed(true);
     Animated.parallel([
-      Animated.timing(scaleAnim, {
+      Animated.spring(scaleAnim, {
         toValue: 0.98,
-        duration: 150,
         useNativeDriver: true,
       }),
       Animated.timing(glowAnim, {
         toValue: 1,
         duration: 150,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  const getStudentShift = (s: string) => {
+    if (s === 'first' || s === 'morning') {
+      return 'Morning';
+    } else if (s === 'second' || s === 'afternoon') {
+      return 'Afternoon';
+    } else if (s === 'third' || s === 'evening') {
+      return 'Evening';
+    }
+    return s;
   };
 
   const handleCardPressOut = () => {
@@ -78,13 +85,12 @@ const StudentCard: React.FC<StudentCardProps> = ({
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
-        friction: 6,
         useNativeDriver: true,
       }),
       Animated.timing(glowAnim, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
     ]).start();
   };
@@ -156,16 +162,14 @@ const StudentCard: React.FC<StudentCardProps> = ({
         style={[
           styles.container,
           {
-            borderColor: borderColor,
-            shadowOpacity: shadowOpacity,
+            borderColor,
+            shadowOpacity,
             transform: [{ scale: scaleAnim }],
           },
           student.isEnabled === false && styles.disabledCard,
         ]}
-        id={student._id}
       >
         <View style={styles.content}>
-          {/* Avatar and Main Info */}
           <View style={styles.leftSection}>
             <View
               style={[
@@ -197,25 +201,31 @@ const StudentCard: React.FC<StudentCardProps> = ({
                   <View
                     style={[
                       styles.shiftBadge,
-                      { backgroundColor: getShiftColor(student.shift) + '20' },
+                      {
+                        backgroundColor: getShiftColor(student.shift) + '20',
+                      },
                       student.isEnabled === false && styles.disabledBadge,
                     ]}
                   >
                     <View
                       style={[
                         styles.shiftDot,
-                        { backgroundColor: getShiftColor(student.shift) },
+                        {
+                          backgroundColor: getShiftColor(student.shift),
+                        },
                         student.isEnabled === false && styles.disabledDot,
                       ]}
                     />
                     <Text
                       style={[
                         styles.shiftText,
-                        { color: getShiftColor(student.shift) },
+                        {
+                          color: getShiftColor(student.shift),
+                        },
                         student.isEnabled === false && styles.disabledShiftText,
                       ]}
                     >
-                      {student.shift}
+                      {getStudentShift(student.shift.toLowerCase())}
                     </Text>
                   </View>
                 </View>
@@ -228,9 +238,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
             </View>
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.rightSection}>
-            {/* Payment Button */}
             <TouchableOpacity
               style={[
                 styles.paymentButton,
@@ -239,15 +247,13 @@ const StudentCard: React.FC<StudentCardProps> = ({
               onPress={onPaymentPress}
               onPressIn={handlePaymentPressIn}
               onPressOut={handlePaymentPressOut}
-              activeOpacity={0.8}
               disabled={student.isEnabled === false}
+              activeOpacity={0.7}
             >
               <Animated.View
                 style={[
                   styles.dollarContainer,
-                  {
-                    transform: [{ scale: dollarScaleAnim }],
-                  },
+                  { transform: [{ scale: dollarScaleAnim }] },
                   student.isEnabled === false && styles.disabledDollarContainer,
                 ]}
               >
@@ -262,20 +268,17 @@ const StudentCard: React.FC<StudentCardProps> = ({
               </Animated.View>
             </TouchableOpacity>
 
-            {/* Arrow Button */}
             <TouchableOpacity
               style={styles.arrowButton}
+              onPress={onDetailsPress}
               onPressIn={handleArrowPressIn}
               onPressOut={handleArrowPressOut}
-              onPress={onDetailsPress}
               activeOpacity={0.7}
             >
               <Animated.View
                 style={[
                   styles.arrowContainer,
-                  {
-                    transform: [{ scale: arrowScaleAnim }],
-                  },
+                  { transform: [{ scale: arrowScaleAnim }] },
                 ]}
               >
                 <ArrowIcon />
@@ -323,10 +326,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   disabledAvatar: {
     backgroundColor: Colors.textSecondary,
@@ -415,10 +414,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
-    shadowColor: Colors.success,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   disabledDollarContainer: {
     backgroundColor: Colors.textSecondary,

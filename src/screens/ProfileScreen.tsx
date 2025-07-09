@@ -18,7 +18,7 @@ import { RootState } from '../redux/store';
 
 const { width, height } = Dimensions.get('window');
 
-const ProfileScreen: React.FC = () => {
+const ProfileScreen: React.FC = ({ navigation }: any) => {
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -111,6 +111,7 @@ const ProfileScreen: React.FC = () => {
 
   const handleChangePassword = () => {
     // Disabled for now
+    navigation.navigate('changepassword');
   };
 
   const handleSupport = () => {
@@ -338,30 +339,36 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Account Management</Text>
 
           <TouchableOpacity
-            style={[styles.actionButton, styles.disabledButton]}
+            style={[styles.actionButton, false && styles.disabledButton]}
             onPress={handleChangePassword}
             activeOpacity={0.7}
-            disabled={true}
+            disabled={false}
           >
             <View style={styles.buttonContent}>
               <View style={styles.buttonIcon}>
                 <Text style={styles.buttonIconText}>🔐</Text>
               </View>
               <View style={styles.buttonTextContainer}>
-                <Text style={[styles.buttonTitle, styles.disabledText]}>
+                <Text
+                  style={[styles.buttonTitle, false && styles.disabledText]}
+                >
                   Change Password
                 </Text>
-                <Text style={[styles.buttonSubtitle, styles.disabledText]}>
+                <Text
+                  style={[styles.buttonSubtitle, false && styles.disabledText]}
+                >
                   Update your security credentials
                 </Text>
               </View>
               <View style={styles.buttonArrow}>
-                <Text style={[styles.arrowText, styles.disabledText]}>›</Text>
+                <Text style={[styles.arrowText, false && styles.disabledText]}>
+                  ›
+                </Text>
               </View>
             </View>
-            <View style={styles.disabledOverlay}>
+            {/* <View style={styles.disabledOverlay}>
               <Text style={styles.comingSoonText}>Coming Soon</Text>
-            </View>
+            </View> */}
           </TouchableOpacity>
 
           <TouchableOpacity

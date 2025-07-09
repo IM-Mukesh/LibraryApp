@@ -1,16 +1,16 @@
-// src/types/student.types.ts
 export interface Student {
   _id?: string;
   libraryId: string;
   name: string;
   mobile: string;
+  email?: string;
   aadhar: string;
   rollNumber: string;
   shift: 'First' | 'Second' | 'Third' | 'Reserved';
   gender: 'Male' | 'Female' | 'Other';
   address: string;
   fatherName: string;
-  age: number;
+  dateOfBirth: Date;
   joiningDate: Date;
   nextDueDate: Date;
   lastPaidDate?: Date | null;
@@ -19,13 +19,14 @@ export interface Student {
 
 export interface StudentFormData {
   name: string;
-  mobile: string;
-  aadhar: string;
-  shift: string;
+  dateOfBirth: Date;
   gender: string;
-  address: string;
   fatherName: string;
-  age: string;
+  mobile: string;
+  email?: string;
+  aadhar: string;
+  address: string;
+  shift: string;
   joiningDate: Date;
   nextDueDate: Date;
 }
@@ -36,5 +37,4 @@ export interface ValidationErrors {
 
 export type RootStackParamList = {
   StudentPayment: { student: { name: string; _id: string } };
-  // Add other screens here
 };

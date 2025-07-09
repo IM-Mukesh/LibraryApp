@@ -51,7 +51,7 @@ const LoginHeader: React.FC = () => {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-    marginBottom: Spacing.xl * 2,
+    marginBottom: Spacing.xl,
   },
   logoContainer: {
     width: 80,

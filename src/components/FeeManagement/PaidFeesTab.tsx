@@ -7,6 +7,7 @@ import {
   ScrollView,
   Animated,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import dayjs from 'dayjs';
 import { Colors, Spacing, FontSizes } from '../../theme/theme';
@@ -23,22 +24,30 @@ interface PaidStudent {
 const PaidFeesTab: React.FC = () => {
   const [students, setStudents] = useState<PaidStudent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const refreshRotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     fetchRecentPayments();
   }, []);
 
-  const fetchRecentPayments = async () => {
+  const fetchRecentPayments = async (isRefreshing = false) => {
     try {
+      if (!isRefreshing) {
+        setLoading(true);
+      }
       const data = await getRecentPayments();
       setStudents(data);
     } catch (error) {
       console.error('Error fetching recent payments:', error);
     } finally {
       setLoading(false);
+      if (isRefreshing) {
+        setRefreshing(false);
+      }
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -54,6 +63,23 @@ const PaidFeesTab: React.FC = () => {
     }
   };
 
+  const handleRefresh = () => {
+    if (refreshing || loading) return;
+
+    setRefreshing(true);
+
+    // Start rotation animation
+    refreshRotateAnim.setValue(0);
+    Animated.timing(refreshRotateAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    // Fetch fresh data
+    fetchRecentPayments(true);
+  };
+
   const sortedStudents = [...students].sort((a, b) =>
     dayjs(b.paidDate).diff(dayjs(a.paidDate)),
   );
@@ -61,6 +87,36 @@ const PaidFeesTab: React.FC = () => {
   const totalAmount = students.reduce(
     (sum, student) => sum + student.amount,
     0,
+  );
+
+  const refreshRotate = refreshRotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+    extrapolate: 'clamp',
+  });
+
+  // Refresh Icon Component
+  const RefreshIcon = ({ size = 20, color = Colors.primary }) => (
+    <View
+      style={{
+        width: size,
+        height: size,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <Text
+        style={{
+          fontSize: size,
+          color: color,
+          fontWeight: 'bold',
+          textAlign: 'center',
+          lineHeight: size,
+        }}
+      >
+        ↻
+      </Text>
+    </View>
   );
 
   if (loading) {
@@ -82,14 +138,37 @@ const PaidFeesTab: React.FC = () => {
       ]}
     >
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.title}>Recent Payments</Text>
           <Text style={styles.totalAmount}>
             Total: ₹{totalAmount.toLocaleString()}
           </Text>
         </View>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{students.length}</Text>
+        <View style={styles.headerRight}>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{students.length}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={handleRefresh}
+            activeOpacity={0.7}
+            disabled={refreshing}
+          >
+            <Animated.View
+              style={[
+                styles.refreshIconContainer,
+                {
+                  transform: [{ rotate: refreshRotate }],
+                },
+                refreshing && styles.refreshingIcon,
+              ]}
+            >
+              <RefreshIcon
+                size={18}
+                color={refreshing ? Colors.disabled : Colors.primary}
+              />
+            </Animated.View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -135,6 +214,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: Spacing.lg,
   },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   title: {
     fontSize: FontSizes.large,
     fontWeight: 'bold',
@@ -158,6 +245,28 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: FontSizes.small,
     fontWeight: 'bold',
+  },
+  refreshButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  refreshIconContainer: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  refreshingIcon: {
+    opacity: 0.6,
   },
   scrollView: {
     flex: 1,

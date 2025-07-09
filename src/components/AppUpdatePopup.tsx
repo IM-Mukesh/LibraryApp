@@ -176,7 +176,7 @@ const AppUpdatePopup: React.FC<UpdatePopupProps> = ({
 
               <View style={styles.versionContainer}>
                 <Text style={styles.versionText}>
-                  v{versionData.currentVersion} → v{versionData.latestVersion}
+                  V{versionData.currentVersion} → V{versionData.latestVersion}
                 </Text>
               </View>
             </View>

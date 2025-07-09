@@ -3,12 +3,10 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  ScrollView,
-  RefreshControl,
-  Text,
   View,
-  Dimensions,
+  Text,
   BackHandler,
+  Dimensions,
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { getLatestAppVersion } from '../apis/api';
@@ -28,12 +26,12 @@ import FeeManagementContainer from '../components/FeeManagement/FeeManagementCon
 import Sidebar from '../components/Sidebar/Sidebar';
 import ConfirmationPopup from '../components/ConfirmationComponent';
 import AppUpdatePopup from '../components/AppUpdatePopup';
+import { APP_VERSION } from '../apis/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.9;
 
 const DashboardScreen: React.FC = () => {
-  const [refreshing, setRefreshing] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [latestVersionData, setLatestVersionData] =
@@ -46,12 +44,9 @@ const DashboardScreen: React.FC = () => {
   const translateX = useSharedValue(-SIDEBAR_WIDTH);
   const overlayOpacity = useSharedValue(0);
 
-  const currentVersion = DeviceInfo.getVersion();
-  const buildNumber = DeviceInfo.getBuildNumber();
-
   const shouldShowUpdatePopup =
     latestVersionData &&
-    latestVersionData.latestVersion !== currentVersion &&
+    latestVersionData.latestVersion !== APP_VERSION &&
     !hasDismissedUpdate;
 
   useEffect(() => {
@@ -62,7 +57,7 @@ const DashboardScreen: React.FC = () => {
         if (
           fetchedVersion &&
           fetchedVersion.latestVersion &&
-          fetchedVersion.latestVersion > currentVersion
+          fetchedVersion.latestVersion > APP_VERSION
         ) {
           const versionData = buildVersionData(fetchedVersion);
           setLatestVersionData(versionData);
@@ -91,24 +86,6 @@ const DashboardScreen: React.FC = () => {
     );
     return () => backHandler.remove();
   }, [sidebarVisible]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      const refreshPromises = [];
-      if (summaryCardsRef.current?.refresh) {
-        refreshPromises.push(summaryCardsRef.current.refresh());
-      }
-      if (feeManagementRef.current?.refresh) {
-        refreshPromises.push(feeManagementRef.current.refresh());
-      }
-      await Promise.allSettled(refreshPromises);
-    } catch (error) {
-      console.error('Dashboard refresh error:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
 
   const openSidebar = useCallback(() => {
     translateX.value = withSpring(0, {
@@ -158,26 +135,11 @@ const DashboardScreen: React.FC = () => {
         />
       )}
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={!sidebarVisible}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-            title="Refreshing..."
-            titleColor={Colors.textSecondary}
-          />
-        }
-      >
+      <View style={styles.fixedContent}>
         <HeaderCard onProfilePress={openSidebar} />
         <SummaryCards ref={summaryCardsRef} />
-        <FeeManagementContainer />
-      </ScrollView>
+        <FeeManagementContainer refreshing={false} />
+      </View>
 
       <Sidebar
         isVisible={sidebarVisible}
@@ -206,10 +168,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  scrollView: {
+  fixedContent: {
     flex: 1,
-  },
-  scrollContent: {
     paddingBottom: Spacing.md,
   },
   exitIconContainer: {

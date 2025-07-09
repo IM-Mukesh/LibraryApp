@@ -63,7 +63,7 @@ const HeaderCard: React.FC<HeaderCardProps> = ({ onProfilePress }) => {
         >
           <Image
             source={{
-              uri: 'https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg',
+              uri: 'https://i.pinimg.com/736x/a2/a4/9a/a2a49a637a70cf1efb8c29d587829d6d.jpg',
             }}
             style={styles.icon}
             resizeMode="cover"

@@ -53,10 +53,14 @@ export interface Student {
   address?: string;
   homePhoneNumber?: string;
   shift: 'morning' | 'evening' | string;
-  libraryId: string;
+  // libraryId: string;
   createdAt: string;
   updatedAt: string;
   __v: number;
+  dateOfBirth: string;
+  gender: string; // <-- add this
+  joiningDate?: string; // <-- add if relevant
+  nextDueDate?: string; // <-- add if relevant
 }
 
 export type CreateStudentInput = Omit<
@@ -276,6 +280,35 @@ export const getLatestAppVersion = async (): Promise<AppVersion> => {
     );
     throw new Error(
       error.response?.data?.message || 'Failed to fetch app version',
+    );
+  }
+};
+
+interface ChangePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export const changePassword = async (
+  payload: ChangePasswordPayload,
+): Promise<{ message: string }> => {
+  try {
+    const response = await api.post('/api/auth/library-password', payload);
+
+    console.log('Password change response:', response.data);
+
+    if (!response.data || !response.data.message) {
+      throw new Error('Invalid response from change password API');
+    }
+
+    return response.data;
+  } catch (error: any) {
+    console.error(
+      'changePassword error:',
+      error.response?.data || error.message,
+    );
+    throw new Error(
+      error.response?.data?.message || 'Failed to change password',
     );
   }
 };

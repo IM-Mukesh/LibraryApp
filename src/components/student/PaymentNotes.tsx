@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TextInput, StyleSheet, View } from 'react-native';
-import { Colors, Spacing, FontSizes, Radius } from '../../theme/theme';
+import { Colors, Spacing, FontSizes, Radius, Shadows } from '../../theme/theme';
 
 interface NotesInputProps {
   value: string;
@@ -11,29 +11,37 @@ interface NotesInputProps {
 const NotesInput: React.FC<NotesInputProps> = ({
   value,
   onChange,
-  placeholder = 'Enter notes... (optional)',
+  placeholder = '✍️ Write a quick note…',
 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
-    <View style={[styles.container, { marginBottom: Spacing.sm }]}>
-      <TextInput
+    <View style={styles.container}>
+      <View
         style={[
-          styles.input,
-          {
-            backgroundColor: Colors.white,
-            color: Colors.primary,
-            borderColor: Colors.border,
-            borderRadius: Spacing.md,
-            padding: Spacing.sm + Spacing.xs,
-            fontSize: FontSizes.medium,
+          styles.inputWrapper,
+          isFocused && {
+            // borderColor: Colors.neon,
+            shadowColor: Colors.neon,
+            shadowOpacity: 0.3,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 0 },
+            elevation: 4,
           },
         ]}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={Colors.primary}
-        multiline
-        numberOfLines={3}
-      />
+      >
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.secondary}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          multiline={false}
+          numberOfLines={1}
+        />
+      </View>
     </View>
   );
 };
@@ -41,12 +49,23 @@ const NotesInput: React.FC<NotesInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    paddingHorizontal: 16,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  inputWrapper: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1.2,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    ...Shadows.subtle,
   },
   input: {
-    borderWidth: 1,
-    textAlignVertical: 'top', // for multiline to align at top
+    fontSize: FontSizes.medium,
+    color: Colors.primary,
+    paddingVertical: 6,
+    fontWeight: 'bold',
   },
 });
 
