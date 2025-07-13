@@ -112,8 +112,6 @@ export const StudentPaymentScreen: React.FC<PaymentScreenProps> = ({
     }
   }, [studentData, navigation]);
 
-  console.log('stud data', studentData);
-
   // Animation setup
   useEffect(() => {
     Animated.parallel([

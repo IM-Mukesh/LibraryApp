@@ -997,7 +997,6 @@ export const StudentEnrollmentForm: React.FC<StudentEnrollmentFormProps> = ({
   // Memoize validation to prevent re-renders
   const currentStepIsValid = useMemo(() => {
     const stepErrors = validateStep(currentStep, formData);
-    console.log('step errors', stepErrors);
 
     return Object.keys(stepErrors).length === 0;
   }, [currentStep, formData]);
@@ -1028,8 +1027,6 @@ export const StudentEnrollmentForm: React.FC<StudentEnrollmentFormProps> = ({
   };
   const handleNext = useCallback(async () => {
     if (validateCurrentStep()) {
-      console.log('pressed...');
-
       if (currentStep < 3) {
         setCurrentStep(prev => prev + 1);
         // Haptic feedback
@@ -1038,7 +1035,6 @@ export const StudentEnrollmentForm: React.FC<StudentEnrollmentFormProps> = ({
         }
       } else {
         // Final step - create student
-        console.log('pressed final...');
         setLoading(true);
 
         try {
@@ -1049,13 +1045,10 @@ export const StudentEnrollmentForm: React.FC<StudentEnrollmentFormProps> = ({
 
           // Transform form data to match API expectations
           const studentData = transformFormDataForAPI(formData);
-          console.log('st data is', studentData);
           // return;
 
           // Make API call
           const createdStudent = await createStudent(studentData);
-
-          console.log('Student created successfully:', createdStudent);
 
           // Clear saved data on successful submission
           await AsyncStorage.removeItem(STORAGE_KEY);

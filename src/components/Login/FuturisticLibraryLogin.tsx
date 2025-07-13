@@ -264,6 +264,7 @@ const FuturisticLibraryLogin: React.FC = () => {
 
     try {
       const { token, library } = await loginLibrary(email, password);
+
       setAuthToken(token);
       if (token && library) {
         dispatch(USER({ token, library, isLoggedIn: true }));

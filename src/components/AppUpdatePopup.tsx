@@ -97,26 +97,9 @@ const AppUpdatePopup: React.FC<UpdatePopupProps> = ({
 
   const handleUpdate = async () => {
     try {
-      console.log('updateurl is', versionData.updateUrl);
-
       const supported = await Linking.canOpenURL(versionData.updateUrl);
-      console.log('issupp', supported);
 
       await Linking.openURL(versionData.updateUrl);
-      //   if (supported) {
-      //     await Linking.openURL(versionData.updateUrl);
-      //     if (!versionData.forceUpdate) {
-      //       onClose();
-      //     }
-      //   } else {
-      //     await Linking.openURL(versionData.updateUrl);
-      //     return;
-      //     Alert.alert(
-      //       'Unable to Open',
-      //       'Cannot open the update link. Please update manually from your app store.',
-      //       [{ text: 'OK', style: 'default' }],
-      //     );
-      //   }
     } catch (error) {
       Alert.alert(
         'Error',

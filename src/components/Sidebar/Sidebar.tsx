@@ -44,7 +44,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const handleMenuPress = (item: { id: number; title: string }) => {
-    console.log(`Pressed: ${item.title}`);
     // Add your navigation logic here
     onClose();
   };

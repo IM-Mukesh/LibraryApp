@@ -1,5 +1,3 @@
-// src/theme/theme.ts
-
 const Colors = {
   primary: '#2E86DE',
   secondary: '#48C9B0',
@@ -18,6 +16,11 @@ const Colors = {
   cardGradient: '#1E3A8A',
   surface: '#f2f2f2',
   gray: '#A0A0A0',
+  // New colors for avatar system
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  shimmer: 'rgba(255, 255, 255, 0.3)',
+  avatarBorder: '#E8F4FD',
+  uploadHover: '#1976D2',
 };
 
 const Spacing = {
@@ -72,6 +75,21 @@ const Shadows = {
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  // New shadows for avatar system
+  avatar: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  overlay: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 15,
   },
 };
 

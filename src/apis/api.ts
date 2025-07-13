@@ -1,6 +1,7 @@
 // src/api/api.ts
 
 import axios from 'axios';
+import type { AxiosResponse } from 'axios';
 import { BASE_URL } from './config';
 import { AppVersion } from '../types';
 // ---------------- TYPES ----------------
@@ -13,6 +14,7 @@ export interface Library {
   adminEmail: string;
   adminPhone: string;
   address: string;
+  profileImage: string;
   status: string;
   isPaymentRequired: boolean;
   billingAmount: number;
@@ -265,8 +267,6 @@ export const getLatestAppVersion = async (): Promise<AppVersion> => {
   try {
     const response = await api.get('/api/version/latest');
 
-    console.log('got result is', response);
-
     // Assuming the response is just the version object
     if (!response.data || !response.data.latestVersion) {
       throw new Error('Invalid response from version API');
@@ -295,8 +295,6 @@ export const changePassword = async (
   try {
     const response = await api.post('/api/auth/library-password', payload);
 
-    console.log('Password change response:', response.data);
-
     if (!response.data || !response.data.message) {
       throw new Error('Invalid response from change password API');
     }
@@ -310,5 +308,48 @@ export const changePassword = async (
     throw new Error(
       error.response?.data?.message || 'Failed to change password',
     );
+  }
+};
+
+export const uploadProfileImage = async (
+  image: {
+    uri: string;
+    name: string;
+    type: string;
+  },
+  studentId?: string,
+): Promise<{
+  success: boolean;
+  message: string;
+  imageUrl: string;
+  user: any;
+}> => {
+  try {
+    const formData = new FormData();
+
+    formData.append('image', {
+      uri: image.uri,
+      name: image.name,
+      type: image.type,
+    } as any);
+
+    if (studentId) {
+      formData.append('studentId', studentId);
+    }
+
+    const response: AxiosResponse = await api.post(
+      '/api/upload/profile-image',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Upload error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'Image upload failed');
   }
 };

@@ -9,6 +9,7 @@ interface Library {
   adminEmail: string;
   adminPhone: string;
   address: string;
+  profileImage: string;
   status: string;
   isPaymentRequired: boolean;
   billingAmount: number;
