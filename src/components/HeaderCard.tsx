@@ -63,7 +63,9 @@ const HeaderCard: React.FC<HeaderCardProps> = ({ onProfilePress }) => {
         >
           <Image
             source={{
-              uri: 'https://i.pinimg.com/736x/a2/a4/9a/a2a49a637a70cf1efb8c29d587829d6d.jpg',
+              uri: libraryData?.profileImage
+                ? libraryData?.profileImage
+                : 'https://static.vecteezy.com/system/resources/thumbnails/011/490/381/small_2x/happy-smiling-young-man-avatar-3d-portrait-of-a-man-cartoon-character-people-illustration-isolated-on-white-background-vector.jpg',
             }}
             style={styles.icon}
             resizeMode="cover"
@@ -117,6 +119,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: 'hidden',
     marginRight: Spacing.md,
+    borderColor: Colors.primary,
+    borderWidth: 2,
   },
   icon: {
     width: '100%',

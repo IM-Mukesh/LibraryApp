@@ -49,7 +49,7 @@ export const AcademicInfoStep: React.FC<AcademicInfoStepProps> = ({
           error={errors.shift}
           required
           // icon="⏰"
-          placeholder="Select your preferred shift"
+          placeholder=""
         />
 
         <EnhancedDatePicker

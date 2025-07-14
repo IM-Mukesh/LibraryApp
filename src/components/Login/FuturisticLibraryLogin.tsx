@@ -1,5 +1,7 @@
-// FuturisticLibraryLogin.tsx
-import React, { useState, useEffect, useRef } from 'react';
+'use client';
+
+import type React from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -66,6 +68,7 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const borderColorAnim = useRef(new Animated.Value(0)).current;
   const labelAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     Animated.timing(borderColorAnim, {
@@ -80,7 +83,15 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
       easing: Easing.ease,
       useNativeDriver: false,
     }).start();
-  }, [isFocused, value]);
+  }, [isFocused, value, borderColorAnim, labelAnim]);
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+  }, []);
 
   const borderColor = borderColorAnim.interpolate({
     inputRange: [0, 1],
@@ -106,28 +117,33 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
       isFocused || value ? LoginTheme.cardBackground : 'transparent',
     paddingHorizontal: isFocused || value ? 6 : 0,
     fontWeight: '500' as const,
+    zIndex: 1,
   };
 
   return (
     <View style={styles.inputWrapper}>
       <Animated.View style={[styles.inputContainer, { borderColor }]}>
         <TextInput
+          ref={inputRef}
           style={styles.textInput}
           value={value}
           onChangeText={onChangeText}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           placeholderTextColor="transparent"
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType={keyboardType === 'email-address' ? 'next' : 'done'}
+          blurOnSubmit={false}
         />
         {showPasswordToggle && (
           <TouchableOpacity
             style={styles.passwordToggle}
             onPress={onTogglePassword}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
           >
             <Text style={styles.passwordToggleIcon}>
               {secureTextEntry ? '👁️' : '🙈'}
@@ -149,7 +165,7 @@ const ModernButton: React.FC<{
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
-  const handlePressIn = () => {
+  const handlePressIn = useCallback(() => {
     if (disabled || loading) return;
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -163,9 +179,9 @@ const ModernButton: React.FC<{
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, [disabled, loading, scaleAnim, opacityAnim]);
 
-  const handlePressOut = () => {
+  const handlePressOut = useCallback(() => {
     if (disabled || loading) return;
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -179,7 +195,7 @@ const ModernButton: React.FC<{
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, [disabled, loading, scaleAnim, opacityAnim]);
 
   return (
     <TouchableOpacity
@@ -205,7 +221,21 @@ const ModernButton: React.FC<{
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <View style={styles.loadingSpinner} />
+            <Animated.View
+              style={[
+                styles.loadingSpinner,
+                {
+                  transform: [
+                    {
+                      rotate: new Animated.Value(0).interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
             <Text style={styles.modernButtonText}>Authenticating...</Text>
           </View>
         ) : (
@@ -228,6 +258,7 @@ const FuturisticLibraryLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const fadeInAnim = useRef(new Animated.Value(0)).current;
   const slideUpAnim = useRef(new Animated.Value(30)).current;
@@ -240,6 +271,17 @@ const FuturisticLibraryLogin: React.FC = () => {
   const isFormValid = emailRegex.test(email.trim()) && password.length >= 4;
 
   useEffect(() => {
+    // Keyboard listeners
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true),
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false),
+    );
+
+    // Initial animations
     Animated.parallel([
       Animated.timing(fadeInAnim, {
         toValue: 1,
@@ -254,18 +296,25 @@ const FuturisticLibraryLogin: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
 
-  const handleLogin = async () => {
+    // Cleanup
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, [fadeInAnim, slideUpAnim]);
+
+  const handleLogin = useCallback(async () => {
     if (!isFormValid) return;
 
+    // Dismiss keyboard before starting login process
     Keyboard.dismiss();
     setIsLoading(true);
 
     try {
       const { token, library } = await loginLibrary(email, password);
-
       setAuthToken(token);
+
       if (token && library) {
         dispatch(USER({ token, library, isLoggedIn: true }));
       }
@@ -273,54 +322,64 @@ const FuturisticLibraryLogin: React.FC = () => {
       Alert.alert(
         'Authentication Failed',
         error.message || 'Invalid credentials',
+        [{ text: 'OK', style: 'default' }],
       );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, password, isFormValid, dispatch]);
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
+  const dismissKeyboard = useCallback(() => {
+    // Only dismiss keyboard if it's visible and user taps outside input areas
+    if (keyboardVisible) {
+      Keyboard.dismiss();
+    }
+  }, [keyboardVisible]);
+
+  const handleTogglePassword = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
 
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="transparent"
-          translucent
-        />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
-        {/* Light background with subtle gradient */}
-        <View style={styles.backgroundGradient} />
+      {/* Light background with subtle gradient */}
+      <View style={styles.backgroundGradient} />
 
-        {/* Minimal floating particles */}
-        {Array.from({ length: 8 }).map((_, index) => (
-          <FloatingParticle key={index} delay={index * 800} />
-        ))}
+      {/* Minimal floating particles */}
+      {Array.from({ length: 8 }).map((_, index) => (
+        <FloatingParticle key={index} delay={index * 800} />
+      ))}
 
-        {/* Subtle accent orbs */}
-        <PulsingOrb
-          size={100}
-          color={Colors.primary}
-          duration={4000}
-          style={{ top: height * 0.15, right: -30, opacity: 0.1 }}
-        />
-        <PulsingOrb
-          size={60}
-          color={Colors.secondary}
-          duration={3500}
-          style={{ bottom: height * 0.25, left: -20, opacity: 0.1 }}
-        />
+      {/* Subtle accent orbs */}
+      <PulsingOrb
+        size={100}
+        color={Colors.primary}
+        duration={4000}
+        style={{ top: height * 0.15, right: -30, opacity: 0.1 }}
+      />
+      <PulsingOrb
+        size={60}
+        color={Colors.secondary}
+        duration={3500}
+        style={{ bottom: height * 0.25, left: -20, opacity: 0.1 }}
+      />
 
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           <Animated.View
             style={[
@@ -349,14 +408,13 @@ const FuturisticLibraryLogin: React.FC = () => {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                   />
-
                   <AnimatedInput
                     placeholder="Password"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     showPasswordToggle={true}
-                    onTogglePassword={() => setShowPassword(!showPassword)}
+                    onTogglePassword={handleTogglePassword}
                   />
                 </View>
 
@@ -376,8 +434,8 @@ const FuturisticLibraryLogin: React.FC = () => {
             </View>
           </Animated.View>
         </ScrollView>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -398,7 +456,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingTop: StatusBar.currentHeight || 0,
+    paddingTop: (StatusBar.currentHeight || 0) + 20,
+    paddingBottom: 20,
   },
   mainContent: {
     flex: 1,
@@ -438,6 +497,7 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     marginBottom: Spacing.lg,
+    position: 'relative',
   },
   inputContainer: {
     backgroundColor: LoginTheme.inputBackground,

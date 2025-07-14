@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.primary,
-    borderTopRightRadius: Radius.lg,
+    // borderTopRightRadius: Radius.lg,
   },
   headerTitle: {
     fontSize: FontSizes.large,

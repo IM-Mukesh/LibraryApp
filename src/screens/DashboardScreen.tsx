@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+
 import { getLatestAppVersion } from '../apis/api';
 import { buildVersionData } from '../utils/buildVersionData';
 import { VersionData } from '../types';
@@ -44,6 +46,8 @@ const DashboardScreen: React.FC = () => {
   const translateX = useSharedValue(-SIDEBAR_WIDTH);
   const overlayOpacity = useSharedValue(0);
 
+  const navigation = useNavigation();
+
   const shouldShowUpdatePopup =
     latestVersionData &&
     latestVersionData.latestVersion !== APP_VERSION &&
@@ -70,22 +74,30 @@ const DashboardScreen: React.FC = () => {
     checkVersionUpdate();
   }, []);
 
-  useEffect(() => {
-    const handleBackPress = () => {
-      if (sidebarVisible) {
-        closeSidebar();
-        return true;
-      }
-      setShowExitConfirmation(true);
-      return true;
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (sidebarVisible) {
+          closeSidebar();
+          return true;
+        }
 
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      handleBackPress,
-    );
-    return () => backHandler.remove();
-  }, [sidebarVisible]);
+        if (navigation.canGoBack()) {
+          return false; // Let React Navigation handle back
+        }
+
+        setShowExitConfirmation(true);
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+
+      return () => subscription.remove();
+    }, [sidebarVisible, navigation]),
+  );
 
   const openSidebar = useCallback(() => {
     translateX.value = withSpring(0, {
@@ -169,6 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   fixedContent: {
+    marginTop: Spacing.sm,
     flex: 1,
     paddingBottom: Spacing.md,
   },

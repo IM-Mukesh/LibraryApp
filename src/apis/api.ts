@@ -327,6 +327,7 @@ export const uploadProfileImage = async (
   try {
     const formData = new FormData();
 
+    // Ensure proper file format for FormData
     formData.append('image', {
       uri: image.uri,
       name: image.name,
@@ -344,12 +345,35 @@ export const uploadProfileImage = async (
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000, // 30 second timeout
       },
     );
 
     return response.data;
   } catch (error: any) {
     console.error('❌ Upload error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Image upload failed');
+
+    // Handle different types of errors
+    if (error.code === 'ECONNABORTED') {
+      throw new Error(
+        'Upload timeout. Please check your connection and try again.',
+      );
+    }
+
+    if (error.response?.status === 413) {
+      throw new Error(
+        'Image file is too large. Please select a smaller image.',
+      );
+    }
+
+    if (error.response?.status === 415) {
+      throw new Error(
+        'Unsupported image format. Please select a JPEG or PNG image.',
+      );
+    }
+
+    throw new Error(
+      error.response?.data?.message || 'Image upload failed. Please try again.',
+    );
   }
 };

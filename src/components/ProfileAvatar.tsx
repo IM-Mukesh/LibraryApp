@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,17 +10,12 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import {
-  launchImageLibrary,
-  ImagePickerResponse,
-  MediaType,
-  ImageLibraryOptions,
-} from 'react-native-image-picker';
-import { setAuthToken } from '../apis/api';
+import ImagePicker from 'react-native-image-crop-picker';
 import { Colors, Spacing, FontSizes, Shadows, Radius } from '../theme/theme';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { uploadProfileImage } from '../apis/api';
+import { updateProfileImage } from '../redux/slices/authSlice';
 
 interface ProfileAvatarProps {
   name: string;
@@ -32,6 +27,7 @@ interface ProfileAvatarProps {
   isEditable?: boolean;
   size?: 'small' | 'medium' | 'large';
   userId?: string;
+  studentId?: string;
 }
 
 const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
@@ -44,13 +40,16 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
   isEditable = true,
   size = 'large',
   userId,
+  studentId,
 }) => {
   const [currentImageUri, setCurrentImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [showUploadHint, setShowUploadHint] = useState(false);
-  const { token } = useSelector((state: RootState) => state.auth);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
+  const dispatch = useDispatch();
+  const { token } = useSelector((state: RootState) => state.auth);
   const profileImage = useSelector(
     (state: RootState) => state?.auth?.library?.profileImage,
   );
@@ -69,72 +68,139 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
   const config = sizeConfig[size];
 
   useEffect(() => {
-    if (profileImageUrl && isValidUrl(profileImageUrl)) {
-      setCurrentImageUri(profileImageUrl);
+    // Priority: profileImage from Redux > profileImageUrl prop > null
+    const imageToDisplay = profileImage || profileImageUrl;
+
+    if (imageToDisplay && isValidUrl(imageToDisplay)) {
+      setCurrentImageUri(imageToDisplay);
       setImageLoadError(false);
     } else {
       setCurrentImageUri(null);
       setImageLoadError(true);
     }
-  }, [profileImageUrl]);
+  }, [profileImage, profileImageUrl]);
 
   const isValidUrl = (url: string): boolean => {
     try {
       new URL(url);
       return true;
     } catch {
-      return false;
+      // Check if it's a local file URI
+      return url.startsWith('file://') || url.startsWith('content://');
     }
   };
 
-  const handleImagePicker = (): void => {
-    if (!isEditable) return;
+  // Removed showImagePickerOptions function - no longer needed
 
-    const options: ImageLibraryOptions = {
+  // Commented out camera function
+  // const openCamera = () => {
+  //   ImagePicker.openCamera({
+  //     width: 400,
+  //     height: 400,
+  //     cropping: true,
+  //     cropperCircleOverlay: true,
+  //     compressImageMaxWidth: 400,
+  //     compressImageMaxHeight: 400,
+  //     compressImageQuality: 0.8,
+  //     mediaType: 'photo',
+  //     includeBase64: false,
+  //     enableRotationGesture: true,
+  //     cropperToolbarTitle: 'Edit Profile Picture',
+  //     cropperActiveWidgetColor: Colors.primary,
+  //     cropperStatusBarColor: Colors.primary,
+  //     cropperToolbarColor: Colors.primary,
+  //     cropperToolbarWidgetColor: Colors.white,
+  //   })
+  //     .then(handleImageResult)
+  //     .catch(handleImageError);
+  // };
+
+  const openGallery = () => {
+    ImagePicker.openPicker({
+      width: 400,
+      height: 400,
+      cropping: true,
+      cropperCircleOverlay: true,
+      compressImageMaxWidth: 400,
+      compressImageMaxHeight: 400,
+      compressImageQuality: 0.8,
       mediaType: 'photo',
-      quality: 0.8,
-      maxWidth: 800,
-      maxHeight: 800,
       includeBase64: false,
-      selectionLimit: 1,
-    };
+      enableRotationGesture: true,
+      cropperToolbarTitle: 'Edit Profile Picture',
+      cropperActiveWidgetColor: Colors.primary,
+      cropperStatusBarColor: Colors.primary,
+      cropperToolbarColor: Colors.primary,
+      cropperToolbarWidgetColor: Colors.white,
+    })
+      .then(handleImageResult)
+      .catch(handleImageError);
+  };
 
-    launchImageLibrary(options, (response: ImagePickerResponse) => {
-      if (response.didCancel || response.errorMessage) {
-        if (response.errorMessage) {
-          Alert.alert('Error', 'Failed to select image. Please try again.');
-        }
-        return;
+  const handleImageResult = async (image: any) => {
+    try {
+      setIsLoading(true);
+      setUploadProgress(0);
+
+      // Update UI immediately with the cropped image
+      setCurrentImageUri(image.path);
+      setImageLoadError(false);
+      onImageSelected?.(image.path);
+
+      // Prepare upload data
+      const uploadData = {
+        uri: image.path,
+        type: image.mime || 'image/jpeg',
+        name: `profile_${userId || studentId || 'user'}_${Date.now()}.jpg`,
+      };
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
+      // Upload the image
+      const response = await uploadProfileImage(uploadData, studentId);
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (response.success) {
+        // Append cache-busting timestamp
+        const imageUrlWithTimestamp = `${response.imageUrl}?t=${Date.now()}`;
+        dispatch(updateProfileImage(imageUrlWithTimestamp));
+        setCurrentImageUri(imageUrlWithTimestamp);
+        onImageUpload?.(response);
+
+        Alert.alert('Success', 'Profile picture updated successfully!');
+      } else {
+        throw new Error(response.message || 'Upload failed');
       }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      Alert.alert(
+        'Upload Failed',
+        error.message || 'Failed to upload profile picture. Please try again.',
+      );
+      // Revert to previous image on error
+      setCurrentImageUri(profileImage || profileImageUrl || null);
+    } finally {
+      setIsLoading(false);
+      setUploadProgress(0);
+    }
+  };
 
-      if (response.assets && response.assets[0]) {
-        const asset = response.assets[0];
-
-        if (asset.uri) {
-          setIsLoading(true);
-          setCurrentImageUri(asset.uri);
-
-          // Callback for immediate UI update
-          onImageSelected?.(asset.uri);
-
-          // Prepare upload data
-          const uploadData = {
-            uri: asset.uri,
-            type: asset.type || 'image/jpeg',
-            name:
-              asset.fileName || `profile_${userId || 'user'}_${Date.now()}.jpg`,
-            size: asset.fileSize,
-          };
-
-          // Handle upload
-          onImageUpload?.(uploadData);
-
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 1000);
-        }
-      }
-    });
+  const handleImageError = (error: any) => {
+    if (error.code !== 'E_PICKER_CANCELLED') {
+      console.error('Image picker error:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
+    }
   };
 
   const handleImageLoadError = (): void => {
@@ -162,6 +228,21 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
     ).toUpperCase();
   };
 
+  const renderProgressBar = () => {
+    if (!isLoading || uploadProgress === 0) return null;
+
+    return (
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <Animated.View
+            style={[styles.progressFill, { width: `${uploadProgress}%` }]}
+          />
+        </View>
+        <Text style={styles.progressText}>{uploadProgress}%</Text>
+      </View>
+    );
+  };
+
   const renderAvatarContent = () => {
     if (isLoading) {
       return (
@@ -176,6 +257,7 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
           ]}
         >
           <ActivityIndicator size="large" color={Colors.primary} />
+          {renderProgressBar()}
         </View>
       );
     }
@@ -209,7 +291,7 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
           {isEditable && (
             <View style={styles.editOverlay}>
               <View style={styles.editIcon}>
-                <Text style={styles.editIconText}>✏️</Text>
+                <Text style={styles.editIconText}>📷</Text>
               </View>
             </View>
           )}
@@ -241,12 +323,13 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
     <TouchableOpacity
       style={[
         styles.avatarContainer,
-        {
-          transform: [{ scale: pulseAnim }, { translateY: floatTranslate }],
-        },
+        // {
+        //   transform: [{ scale: pulseAnim }, { translateY: floatTranslate }],
+        // },
       ]}
-      onPress={handleImagePicker}
-      disabled={!isEditable}
+      // Directly call openGallery instead of showImagePickerOptions
+      onPress={isEditable ? openGallery : undefined}
+      disabled={!isEditable || isLoading}
       onPressIn={() => setShowUploadHint(true)}
       onPressOut={() => setShowUploadHint(false)}
       activeOpacity={isEditable ? 0.8 : 1}
@@ -268,7 +351,7 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
       {renderAvatarContent()}
 
       {/* Camera icon indicator */}
-      {isEditable && (
+      {/* {isEditable && !isLoading && (
         <View
           style={[
             styles.cameraIndicator,
@@ -285,22 +368,10 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
             📷
           </Text>
         </View>
-      )}
-
-      {/* Status indicator - commented out */}
-      {/* <View
-        style={[
-          styles.statusIndicator,
-          {
-            width: config.indicator,
-            height: config.indicator,
-            borderRadius: config.indicator / 2,
-          },
-        ]}
-      /> */}
+      )} */}
 
       {/* Upload hint */}
-      {isEditable && showUploadHint && (
+      {isEditable && showUploadHint && !isLoading && (
         <View style={styles.uploadHintOverlay}>
           <Text style={styles.uploadHintOverlayText}>Tap to change</Text>
         </View>
@@ -376,21 +447,6 @@ const styles = StyleSheet.create({
   editIconText: {
     fontSize: FontSizes.small,
   },
-  uploadHint: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.button,
-  },
-  uploadHintText: {
-    fontSize: FontSizes.medium,
-  },
   uploadHintOverlay: {
     position: 'absolute',
     bottom: -40,
@@ -420,14 +476,30 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
   },
-  statusIndicator: {
+  progressContainer: {
     position: 'absolute',
-    bottom: 5,
-    right: 5,
-    backgroundColor: Colors.success,
-    borderWidth: 3,
-    borderColor: Colors.white,
-    ...Shadows.subtle,
+    bottom: 10,
+    left: 10,
+    right: 10,
+    alignItems: 'center',
+  },
+  progressBar: {
+    width: '100%',
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
+    marginBottom: Spacing.xs,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.sm,
+  },
+  progressText: {
+    fontSize: FontSizes.xs,
+    color: Colors.primary,
+    fontWeight: '600',
   },
 });
 

@@ -1,24 +1,17 @@
 'use client';
 
 import type React from 'react';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
+  Animated,
+  Easing,
+  TouchableOpacity,
   type TextInputProps,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  interpolateColor,
-  runOnJS,
-  SlideInDown,
-  SlideOutUp,
-} from 'react-native-reanimated';
 
 // Theme constants
 const Colors = {
@@ -39,6 +32,10 @@ const Colors = {
   cardGradient: '#1E3A8A',
   surface: '#f2f2f2',
   gray: '#A0A0A0',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  shimmer: 'rgba(255, 255, 255, 0.3)',
+  avatarBorder: '#E8F4FD',
+  uploadHover: '#1976D2',
 };
 
 const Spacing = {
@@ -47,22 +44,67 @@ const Spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
+  xxxl: 64,
 };
 
 const FontSizes = {
+  xs: 10,
   small: 12,
   medium: 16,
   large: 20,
   xlarge: 24,
+  xxlarge: 32,
+  xxxlarge: 48,
 };
 
 const Radius = {
+  xs: 2,
   sm: 4,
   md: 8,
   lg: 12,
   xl: 16,
   xxl: 20,
+  xxxl: 24,
   full: 9999,
+};
+
+const Shadows = {
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  button: {
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  avatar: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  overlay: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 15,
+  },
 };
 
 interface FloatingLabelInputProps extends Omit<TextInputProps, 'placeholder'> {
@@ -73,6 +115,8 @@ interface FloatingLabelInputProps extends Omit<TextInputProps, 'placeholder'> {
   helperText?: string;
   disabled?: boolean;
   variant?: 'outlined' | 'filled';
+  showPasswordToggle?: boolean;
+  onTogglePassword?: () => void;
 }
 
 export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
@@ -86,80 +130,34 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   onBlur,
   disabled = false,
   variant = 'outlined',
+  showPasswordToggle = false,
+  onTogglePassword,
+  secureTextEntry = false,
+  onChangeText,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [hasValue, setHasValue] = useState(!!value);
+  const borderColorAnim = useRef(new Animated.Value(0)).current;
+  const labelAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
 
-  // Animation values
-  const labelTranslateY = useSharedValue(!!value ? -28 : 0);
-  const labelScale = useSharedValue(!!value ? 0.75 : 1);
-  const borderColor = useSharedValue(0);
-  const backgroundColor = useSharedValue(0);
-
-  // Animation configurations
-  const springConfig = useMemo(
-    () => ({
-      damping: 18,
-      stiffness: 250,
-      mass: 0.9,
-    }),
-    [],
-  );
-
-  const timingConfig = useMemo(
-    () => ({
+  useEffect(() => {
+    // Border color animation
+    Animated.timing(borderColorAnim, {
+      toValue: error ? 2 : disabled ? 3 : isFocused ? 1 : 0,
       duration: 200,
-    }),
-    [],
-  );
+      useNativeDriver: false,
+    }).start();
 
-  // Handle label animation based on focus and value
-  useEffect(() => {
-    const shouldFloat = isFocused || hasValue;
+    // Label animation
+    Animated.timing(labelAnim, {
+      toValue: isFocused || value ? 1 : 0,
+      duration: 200,
+      easing: Easing.ease,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocused, value, error, disabled]);
 
-    labelTranslateY.value = withSpring(shouldFloat ? -28 : 0, springConfig);
-    labelScale.value = withSpring(shouldFloat ? 0.75 : 1, springConfig);
-  }, [isFocused, hasValue, springConfig, labelTranslateY, labelScale]);
-
-  // Handle border color and background animations
-  useEffect(() => {
-    if (disabled) {
-      borderColor.value = withTiming(3, timingConfig); // disabled
-      backgroundColor.value = withTiming(0.5, timingConfig);
-    } else if (error) {
-      borderColor.value = withTiming(2, timingConfig); // error
-      backgroundColor.value = withTiming(0, timingConfig);
-    } else if (isFocused) {
-      borderColor.value = withTiming(1, timingConfig); // focused - blue
-      backgroundColor.value = withTiming(
-        variant === 'filled' ? 0.3 : 0,
-        timingConfig,
-      );
-    } else {
-      borderColor.value = withTiming(0, timingConfig); // default - subtle border
-      backgroundColor.value = withTiming(
-        variant === 'filled' ? 0.1 : 0,
-        timingConfig,
-      );
-    }
-  }, [
-    isFocused,
-    error,
-    disabled,
-    variant,
-    timingConfig,
-    borderColor,
-    backgroundColor,
-  ]);
-
-  // Update hasValue when value changes
-  useEffect(() => {
-    setHasValue(!!value);
-  }, [value]);
-
-  // Event handlers
   const handleFocus = useCallback(
     (e: any) => {
       if (disabled) return;
@@ -181,100 +179,81 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   const handleChangeText = useCallback(
     (text: string) => {
       if (disabled) return;
-
-      const newHasValue = !!text;
-      if (newHasValue !== hasValue) {
-        runOnJS(setHasValue)(newHasValue);
-      }
-      props.onChangeText?.(text);
+      onChangeText?.(text);
     },
-    [disabled, hasValue, props],
+    [disabled, onChangeText],
   );
 
-  // Handle container press to focus input
   const handleContainerPress = useCallback(() => {
     if (disabled || !inputRef.current) return;
     inputRef.current.focus();
   }, [disabled]);
 
-  // Animated styles
-  const inputContainerAnimatedStyle = useAnimatedStyle(
-    () => ({
-      backgroundColor: interpolateColor(
-        backgroundColor.value,
-        [0, 0.1, 0.3, 0.5],
-        [Colors.white, Colors.surface, Colors.background, Colors.disabled],
-      ),
-    }),
-    [],
-  );
+  // Border color interpolation
+  const borderColor = borderColorAnim.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [Colors.border, Colors.primary, Colors.error, Colors.disabled],
+  });
 
-  const borderAnimatedStyle = useAnimatedStyle(
-    () => ({
-      borderColor: interpolateColor(
-        borderColor.value,
-        [0, 1, 2, 3],
-        ['#D0D0D0', Colors.primary, Colors.error, Colors.disabled], // Subtle gray when unfocused
-      ),
-    }),
-    [],
-  );
-
-  // Compute border style based on focus state
-  const borderStyle = useMemo(
-    () => ({
-      borderWidth: isFocused ? 3 : 2, // Thicker border - 3px focused, 2px unfocused
-      shadowColor: isFocused ? Colors.primary : '#000000',
-      shadowOffset: { width: 0, height: 1 }, // 1px shadow offset
-      shadowOpacity: isFocused ? 0.2 : 0.08,
-      shadowRadius: isFocused ? 2 : 1, // 1-2px shadow radius
-      elevation: isFocused ? 2 : 1, // Android shadow
-    }),
-    [isFocused],
-  );
-
-  const labelAnimatedStyle = useAnimatedStyle(
-    () => ({
-      transform: [
-        { translateY: labelTranslateY.value },
-        { scale: labelScale.value },
-      ],
-      color: interpolateColor(
-        borderColor.value,
-        [0, 1, 2, 3],
-        [Colors.textSecondary, Colors.primary, Colors.error, Colors.disabled],
-      ),
-    }),
-    [],
-  );
-
-  // Compute styles
-  const inputStyle = useMemo(
-    () => [
-      styles.input,
-      {
-        color: disabled ? Colors.disabled : Colors.textPrimary,
-      },
-      props.multiline && styles.multilineInput,
+  // Background color for filled variant
+  const backgroundColor = borderColorAnim.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [
+      variant === 'filled' ? Colors.surface : Colors.white,
+      variant === 'filled' ? Colors.background : Colors.white,
+      variant === 'filled' ? Colors.surface : Colors.white,
+      Colors.disabled,
     ],
-    [disabled, props.multiline],
-  );
+  });
+
+  // Label style with animation
+  const labelStyle = {
+    position: 'absolute' as const,
+    left: Spacing.md,
+    top: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [18, -8],
+    }),
+    fontSize: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [FontSizes.medium, FontSizes.small],
+    }),
+    color: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [
+        error
+          ? Colors.error
+          : disabled
+          ? Colors.disabled
+          : Colors.textSecondary,
+        error ? Colors.error : disabled ? Colors.disabled : Colors.primary,
+      ],
+    }),
+    backgroundColor: isFocused || value ? Colors.white : 'transparent',
+    paddingHorizontal: isFocused || value ? 6 : 0,
+    fontWeight: '500' as const,
+    zIndex: 1,
+  };
 
   return (
     <View style={[styles.container, containerStyle]}>
       <View style={styles.inputWrapper}>
-        {/* Touchable area for the entire input */}
-        <View style={styles.touchableArea} onTouchStart={handleContainerPress}>
-          {/* Border */}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={handleContainerPress}
+          style={styles.touchableArea}
+        >
           <Animated.View
-            style={[styles.border, borderStyle, borderAnimatedStyle]}
-          />
-
-          {/* Input Container */}
-          <Animated.View
-            style={[styles.inputContainer, inputContainerAnimatedStyle]}
+            style={[
+              styles.inputContainer,
+              {
+                borderColor,
+                backgroundColor,
+                borderWidth: isFocused ? 2 : 1,
+              },
+              isFocused && !error && Shadows.subtle,
+            ]}
           >
-            {/* Text Input */}
             <TextInput
               ref={inputRef}
               {...props}
@@ -282,34 +261,49 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
               onFocus={handleFocus}
               onBlur={handleBlur}
               onChangeText={handleChangeText}
-              style={inputStyle}
+              style={[
+                styles.textInput,
+                {
+                  color: disabled ? Colors.disabled : Colors.textPrimary,
+                },
+                props.multiline && styles.multilineInput,
+              ]}
               placeholderTextColor="transparent"
-              placeholder=""
+              autoCapitalize="none"
+              autoCorrect={false}
               editable={!disabled}
               selectTextOnFocus={!disabled}
+              secureTextEntry={secureTextEntry}
+              returnKeyType="done"
+              blurOnSubmit={false}
             />
+
+            {showPasswordToggle && (
+              <TouchableOpacity
+                style={styles.passwordToggle}
+                onPress={onTogglePassword}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.passwordToggleIcon}>
+                  {secureTextEntry ? '👁️' : '🙈'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
 
-          {/* Floating Label - positioned to sit on the border */}
-          <Animated.Text
-            style={[styles.label, labelAnimatedStyle]}
-            onPress={handleContainerPress}
-          >
+          <Animated.Text style={labelStyle} onPress={handleContainerPress}>
             {label}
             {required && <Text style={styles.required}> *</Text>}
           </Animated.Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Error Message */}
       {error && (
-        <Animated.View
-          style={styles.messageContainer}
-          entering={SlideInDown.duration(200)}
-          exiting={SlideOutUp.duration(200)}
-        >
+        <View style={styles.messageContainer}>
           <Text style={styles.errorText}>⚠️ {error}</Text>
-        </Animated.View>
+        </View>
       )}
 
       {/* Helper Text */}
@@ -331,23 +325,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   touchableArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  border: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    borderColor: '#D0D0D0', // Default subtle gray
-    backgroundColor: 'transparent',
+    flex: 1,
   },
   inputContainer: {
     flex: 1,
@@ -355,32 +333,36 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: Radius.md,
     backgroundColor: Colors.white,
-    zIndex: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  label: {
-    position: 'absolute',
-    left: Spacing.md, // Align with input text - removed the +12
-    top: 18,
-    fontSize: FontSizes.medium,
-    color: Colors.textSecondary,
-    backgroundColor: Colors.white,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    zIndex: 4,
-    overflow: 'hidden',
-  },
-  input: {
+  textInput: {
+    flex: 1,
     fontSize: FontSizes.medium,
     color: Colors.textPrimary,
     paddingHorizontal: 0,
     paddingVertical: 0,
     margin: 0,
     minHeight: 24,
-    zIndex: 3,
+    fontWeight: '500',
   },
   multilineInput: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  passwordToggle: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginLeft: Spacing.sm,
+  },
+  passwordToggleIcon: {
+    fontSize: 16,
   },
   messageContainer: {
     marginTop: Spacing.xs,

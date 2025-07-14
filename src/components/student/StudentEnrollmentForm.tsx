@@ -897,6 +897,7 @@ import { validateStep } from '../../utils/stepValidation';
 import { useHideTabBarOnKeyboard } from '../../hooks/useHideTabBarOnKeyboard';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
+import HeaderBack from '../BackButton';
 
 const STORAGE_KEY = 'student_enrollment_draft';
 
@@ -1223,6 +1224,8 @@ export const StudentEnrollmentForm: React.FC<StudentEnrollmentFormProps> = ({
     <GestureHandlerRootView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
       <SafeAreaView style={styles.safeArea}>
+        <HeaderBack />
+
         <Animated.View style={[styles.background, backgroundStyle]}>
           <LinearGradient
             colors={[Colors.primary, Colors.secondary]}
@@ -1270,7 +1273,7 @@ const styles = StyleSheet.create({
   },
   background: {
     position: 'absolute',
-    top: 0,
+    top: 55,
     left: 0,
     right: 0,
     bottom: 0,

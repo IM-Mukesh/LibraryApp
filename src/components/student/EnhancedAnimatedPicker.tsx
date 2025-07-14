@@ -164,7 +164,7 @@ export const EnhancedAnimatedPicker: React.FC<EnhancedAnimatedPickerProps> = ({
           item.value === value && styles.selectedOptionText,
         ]}
       >
-        {item.label}
+        {item.value} - {`(${item.label})`}
       </Text>
       {item.value === value && <Text style={styles.checkMark}>✓</Text>}
     </TouchableOpacity>

@@ -268,7 +268,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
               </Animated.View>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.arrowButton}
               onPress={onDetailsPress}
               onPressIn={handleArrowPressIn}
@@ -283,7 +283,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
               >
                 <ArrowIcon />
               </Animated.View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
       </Animated.View>
