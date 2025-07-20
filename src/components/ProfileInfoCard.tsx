@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: Colors.white,
     marginHorizontal: Spacing.lg,
-    marginTop: -Spacing.xl * 2,
+    marginTop: -Spacing.xl * 1.25,
     borderRadius: Radius.xxl,
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,

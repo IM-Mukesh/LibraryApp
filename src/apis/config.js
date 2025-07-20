@@ -1,6 +1,6 @@
 // src/config/Config.js
 
-const BASE_URL = 'http://192.168.205.68:5000';
+const BASE_URL = 'http://10.60.247.128:5000';
 
 const APP_VERSION = '1.0.5';
 

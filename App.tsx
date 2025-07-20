@@ -16,6 +16,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import StudentStack from './src/navigation/StudentStack';
 import ProfileStack from './src/navigation/ProfileStack';
+// import FuturisticLibraryRegister from './src/components/Login/FuturisticLibraryRegister';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -80,7 +81,13 @@ function MainApp() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isLoggedIn ? (
-          <Stack.Screen name="Login" component={FuturisticLibraryLogin} />
+          <>
+            <Stack.Screen name="Login" component={FuturisticLibraryLogin} />
+            {/* <Stack.Screen
+              name="Register"
+              component={FuturisticLibraryRegister}
+            /> */}
+          </>
         ) : (
           <Stack.Screen name="Main" component={BottomTabs} />
         )}

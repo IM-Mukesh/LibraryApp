@@ -91,6 +91,31 @@ export const setAuthToken = (token: string | null) => {
 
 // ---------------- AUTH & LIBRARY APIs ----------------
 
+export interface RegisterLibraryPayload {
+  name: string;
+  adminName: string;
+  adminEmail: string;
+  adminPhone: string;
+  address: string;
+  password: string;
+}
+
+export const registerLibrary = async (
+  payload: RegisterLibraryPayload,
+): Promise<LoginResponse> => {
+  try {
+    const response = await api.post('/api/libraries/register', payload);
+    const data = response.data;
+    if (!data.success) {
+      throw new Error(data.message || 'Registration failed');
+    }
+    return data.data as LoginResponse;
+  } catch (error: any) {
+    console.error('Registration Error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'Registration failed');
+  }
+};
+
 export const loginLibrary = async (
   adminEmail: string,
   password: string,

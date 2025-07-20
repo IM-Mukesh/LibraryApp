@@ -52,12 +52,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <Text style={styles.adminName}>
             Administrator: {library.adminName}
           </Text>
-          <View style={styles.badgeContainer}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>PREMIUM</Text>
-            </View>
-          </View>
         </Animated.View>
+        <View style={styles.badgeContainer}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>PREMIUM</Text>
+          </View>
+        </View>
       </View>
       <FloatingParticles floatAnim={floatAnim} rotateAnim={rotateAnim} />
     </Animated.View>
@@ -108,7 +108,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   badgeContainer: {
-    marginTop: Spacing.sm,
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
   },
   badge: {
     backgroundColor: Colors.secondary,

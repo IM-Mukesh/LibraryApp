@@ -253,7 +253,13 @@ const ModernButton: React.FC<{
   );
 };
 
-const FuturisticLibraryLogin: React.FC = () => {
+interface FuturisticLibraryLoginProps {
+  navigation?: any;
+}
+
+const FuturisticLibraryLogin: React.FC<FuturisticLibraryLoginProps> = ({
+  navigation,
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -424,6 +430,17 @@ const FuturisticLibraryLogin: React.FC = () => {
                   loading={isLoading}
                   disabled={!isFormValid}
                 />
+
+                <TouchableOpacity
+                  style={{ marginTop: 16, alignItems: 'center' }}
+                  onPress={() => navigation?.navigate?.('Register')}
+                  activeOpacity={0.7}
+                  disabled={true}
+                >
+                  <Text style={{ color: Colors.primary, fontWeight: '600' }}>
+                    Don't have an account? Register
+                  </Text>
+                </TouchableOpacity>
 
                 <View style={styles.footer}>
                   <Text style={styles.footerText}>
